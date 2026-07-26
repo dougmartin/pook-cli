@@ -73,6 +73,7 @@ func (t *OOBTab) Update(msg tea.Msg) (Tab, tea.Cmd) {
 func (t *OOBTab) setGroups(groups []oob.Group) {
 	t.groups = groups
 	t.files = map[string]oob.File{}
+	t.badge.Count = countFiles(groups)
 
 	var rows []accordionRow
 	for _, g := range groups {
@@ -92,6 +93,16 @@ func (t *OOBTab) setGroups(groups []oob.Group) {
 	}
 
 	t.acc = t.acc.setRows(rows)
+}
+
+// countFiles is the total across every namespace, which is what the tab badge
+// shows.
+func countFiles(groups []oob.Group) int {
+	var n int
+	for _, g := range groups {
+		n += len(g.Files)
+	}
+	return n
 }
 
 // groupHeaderRow is a namespace heading: selectable, but with nothing to open.
@@ -188,11 +199,7 @@ func (t *OOBTab) listHeight() int {
 }
 
 func (t *OOBTab) summary() string {
-	var files int
-	for _, g := range t.groups {
-		files += len(g.Files)
-	}
-	return styleDim.Render(fmt.Sprintf("%d files in %s", files, oob.Home()))
+	return styleDim.Render(fmt.Sprintf("%d files in %s", countFiles(t.groups), oob.Home()))
 }
 
 func (t *OOBTab) View(width, height int) string {

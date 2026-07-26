@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/golden"
 
 	"github.com/dougmartin/pook-cli/internal/git"
@@ -175,5 +176,40 @@ func TestFormatAgo(t *testing.T) {
 		if got := formatAgo(tt.d); got != tt.want {
 			t.Errorf("formatAgo(%v) = %q, want %q", tt.d, got, tt.want)
 		}
+	}
+}
+
+// The tabs are divided, so two inactive ones cannot run together.
+func TestTabBarDividers(t *testing.T) {
+	bar := stripStyles(strings.SplitN(newTestModel(t).View(), "\n", 2)[0])
+
+	want := "1 Changes | 2 Branch | 3 Session | 4 Prompts | 5 oob"
+	if !strings.Contains(bar, want) {
+		t.Errorf("tab bar = %q, want it to contain %q", bar, want)
+	}
+
+	// Not before the first tab, and not trailing after the last.
+	if strings.Contains(bar, "pook  |") {
+		t.Errorf("a divider sits before the first tab: %q", bar)
+	}
+	if strings.Contains(strings.TrimRight(bar, " "), "oob |") {
+		t.Errorf("a divider trails the last tab: %q", bar)
+	}
+}
+
+// With a tab hidden the dividers still fall between what is left.
+func TestTabBarDividersWithoutTheOOBTab(t *testing.T) {
+	withoutOOB(t)
+
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+
+	bar := stripStyles(strings.SplitN(m.View(), "\n", 2)[0])
+	want := "1 Changes | 2 Branch | 3 Session | 4 Prompts"
+	if !strings.Contains(bar, want) {
+		t.Errorf("tab bar = %q, want it to contain %q", bar, want)
+	}
+	if strings.Contains(strings.TrimRight(bar, " "), "Prompts |") {
+		t.Errorf("a divider trails the last tab: %q", bar)
 	}
 }

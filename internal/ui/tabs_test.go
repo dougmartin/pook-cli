@@ -571,3 +571,25 @@ func TestTabOrder(t *testing.T) {
 		}
 	}
 }
+
+// The oob badge counts files across every namespace, the way the Prompts
+// badge counts the whole library.
+func TestOOBBadgeCountsFilesAcrossNamespaces(t *testing.T) {
+	m := oobModel(t)
+
+	// The fixture holds one branch file and two repo files, global is empty.
+	if got := oobTab(m).Badge().Count; got != 3 {
+		t.Errorf("badge = %d, want 3", got)
+	}
+	if !strings.Contains(stripStyles(m.View()), "oob 3") {
+		t.Errorf("the tab bar does not show the count:\n%s", m.View())
+	}
+
+	// It follows the data rather than being set once.
+	m = apply(m, refreshedMsg{Snap: monitor.Snapshot{OOB: []oob.Group{
+		{Namespace: oob.NamespaceGlobal, Label: "global"},
+	}}})
+	if got := oobTab(m).Badge().Count; got != 0 {
+		t.Errorf("badge = %d, want 0 once the files are gone", got)
+	}
+}

@@ -14,6 +14,10 @@ const (
 	statusBarHeight = 1
 )
 
+// tabDivider separates the tabs. The active one carries its own background,
+// so the divider only has to keep the inactive ones from running together.
+const tabDivider = "|"
+
 // pad extends s with spaces to a display width of n.
 func pad(s string, n int) string {
 	if w := lipgloss.Width(s); w < n {
@@ -56,6 +60,10 @@ func (m Model) tabBar() string {
 	b.WriteString(styleAppName.Render(" pook "))
 
 	for i, t := range m.tabs {
+		if i > 0 {
+			b.WriteString(styleTabDivider.Render(tabDivider))
+		}
+
 		base, badge := styleTabInactive, styleBadgeInactive
 		if i == m.active {
 			base, badge = styleTabActive, styleBadgeActive

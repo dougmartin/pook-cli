@@ -14,6 +14,7 @@ var (
 	colAlert    = lipgloss.AdaptiveColor{Light: "160", Dark: "203"}
 	colBadge    = lipgloss.AdaptiveColor{Light: "130", Dark: "214"}
 	colBarBg    = lipgloss.AdaptiveColor{Light: "254", Dark: "236"}
+	colDivider  = lipgloss.AdaptiveColor{Light: "250", Dark: "240"}
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 
 	styleTabActive   = lipgloss.NewStyle().Background(colAccent).Foreground(colOnAccent).Bold(true)
 	styleTabInactive = lipgloss.NewStyle().Background(colBarBg).Foreground(colDim)
+	styleTabDivider  = lipgloss.NewStyle().Background(colBarBg).Foreground(colDivider)
 
 	styleBadgeActive   = lipgloss.NewStyle().Background(colAccent).Foreground(colOnAccent).Bold(true)
 	styleBadgeInactive = lipgloss.NewStyle().Background(colBarBg).Foreground(colBadge).Bold(true)
