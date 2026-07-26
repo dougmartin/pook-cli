@@ -89,12 +89,19 @@ func (m Model) statusBar() string {
 	return left + styleBar.Render(strings.Repeat(" ", gap)) + right
 }
 
+// bannerRow is the idle warning, across the full width just above the status
+// bar so it cannot be missed.
+func (m Model) bannerRow() string {
+	return fillWith(styleBannerBar, " ! "+m.banner+"  (esc dismisses) ", m.width)
+}
+
 // heartbeatText is the "is the agent still working" line.
 func (m Model) heartbeatText() string {
-	if !m.hb.seen {
+	if !m.hasAct {
 		return "watching for changes"
 	}
-	return fmt.Sprintf("last change %s ago · %s", formatAgo(m.now().Sub(m.hb.at)), m.hb.path)
+	return fmt.Sprintf("last change %s ago · %s",
+		formatAgo(m.now().Sub(m.activity.At)), m.activity.Text)
 }
 
 // formatAgo renders an elapsed duration compactly: seconds while the number is
@@ -121,4 +128,14 @@ func fillBar(s string, width int) string {
 		return ansi.Truncate(s, width, "")
 	}
 	return s + styleBar.Render(strings.Repeat(" ", width-w))
+}
+
+// fillWith renders text in one style across the full width.
+func fillWith(style lipgloss.Style, text string, width int) string {
+	rendered := style.Render(text)
+	w := lipgloss.Width(rendered)
+	if w > width {
+		return ansi.Truncate(rendered, width, "")
+	}
+	return rendered + style.Render(strings.Repeat(" ", width-w))
 }

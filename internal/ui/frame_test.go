@@ -6,6 +6,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/golden"
+
+	"github.com/dougmartin/pook-cli/internal/monitor"
 )
 
 // The golden frames below are the regression net for layout math, tab bar
@@ -35,10 +37,11 @@ func TestFrameBadges(t *testing.T) {
 }
 
 func TestFrameStatusBar(t *testing.T) {
-	m := apply(newTestModel(t),
-		HeartbeatMsg{Path: "internal/ui/app.go", At: testNow.Add(-42 * time.Second)},
-		AlertMsg{Text: "package.json touched"},
-	)
+	m := apply(newTestModel(t), refreshedMsg{
+		Snap:        monitor.Snapshot{WatchedPaths: []string{"package.json", ".env"}},
+		Activity:    monitor.Activity{At: testNow.Add(-42 * time.Second), Text: "internal/ui/app.go"},
+		HasActivity: true,
+	})
 
 	frame := m.View()
 	requireFrameSize(t, frame, testWidth, testHeight)
@@ -66,9 +69,11 @@ func TestFrameClipboardModal(t *testing.T) {
 // A terminal too narrow for the status bar's two segments must still produce a
 // well-formed frame.
 func TestFrameNarrow(t *testing.T) {
-	m := New(gitRepoForTest()).WithClock(fixedClock)
-	m = apply(m, tea.WindowSizeMsg{Width: 32, Height: 12},
-		HeartbeatMsg{Path: "internal/ui/app.go", At: testNow.Add(-5 * time.Second)})
+	m := New(gitRepoForTest(), nil, nil).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: 32, Height: 12}, refreshedMsg{
+		Activity:    monitor.Activity{At: testNow.Add(-5 * time.Second), Text: "internal/ui/app.go"},
+		HasActivity: true,
+	})
 
 	frame := m.View()
 	requireFrameSize(t, frame, 32, 12)
@@ -77,7 +82,7 @@ func TestFrameNarrow(t *testing.T) {
 
 // A terminal so short that no pane fits still renders both bars.
 func TestFrameTiny(t *testing.T) {
-	m := New(gitRepoForTest()).WithClock(fixedClock)
+	m := New(gitRepoForTest(), nil, nil).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: 20, Height: 2})
 
 	frame := m.View()
@@ -88,7 +93,7 @@ func TestFrameTiny(t *testing.T) {
 // Before the first WindowSizeMsg there is no size to lay out against, so the
 // model renders nothing rather than guessing.
 func TestFrameBeforeSize(t *testing.T) {
-	if got := New(gitRepoForTest()).View(); got != "" {
+	if got := New(gitRepoForTest(), nil, nil).View(); got != "" {
 		t.Fatalf("view before window size = %q, want empty", got)
 	}
 }

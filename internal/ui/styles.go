@@ -17,10 +17,11 @@ var (
 )
 
 var (
-	styleBar      = lipgloss.NewStyle().Background(colBarBg).Foreground(colText)
-	styleBarDim   = lipgloss.NewStyle().Background(colBarBg).Foreground(colDim)
-	styleAppName  = lipgloss.NewStyle().Background(colBarBg).Foreground(colAccent).Bold(true)
-	styleAlertBar = lipgloss.NewStyle().Background(colAlert).Foreground(colOnAccent).Bold(true)
+	styleBar       = lipgloss.NewStyle().Background(colBarBg).Foreground(colText)
+	styleBarDim    = lipgloss.NewStyle().Background(colBarBg).Foreground(colDim)
+	styleAppName   = lipgloss.NewStyle().Background(colBarBg).Foreground(colAccent).Bold(true)
+	styleAlertBar  = lipgloss.NewStyle().Background(colAlert).Foreground(colOnAccent).Bold(true)
+	styleBannerBar = lipgloss.NewStyle().Background(colBadge).Foreground(colOnAccent).Bold(true)
 
 	styleTabActive   = lipgloss.NewStyle().Background(colAccent).Foreground(colOnAccent).Bold(true)
 	styleTabInactive = lipgloss.NewStyle().Background(colBarBg).Foreground(colDim)
@@ -28,9 +29,10 @@ var (
 	styleBadgeActive   = lipgloss.NewStyle().Background(colAccent).Foreground(colOnAccent).Bold(true)
 	styleBadgeInactive = lipgloss.NewStyle().Background(colBarBg).Foreground(colBadge).Bold(true)
 
-	styleDim   = lipgloss.NewStyle().Foreground(colDim)
-	styleTitle = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
-	styleKey   = lipgloss.NewStyle().Foreground(colText).Bold(true)
+	styleDim     = lipgloss.NewStyle().Foreground(colDim)
+	styleWatched = lipgloss.NewStyle().Foreground(colBadge)
+	styleTitle   = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	styleKey     = lipgloss.NewStyle().Foreground(colText).Bold(true)
 
 	stylePanel = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).

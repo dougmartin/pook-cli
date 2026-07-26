@@ -3,53 +3,41 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/dougmartin/pook-cli/internal/git"
+	"github.com/dougmartin/pook-cli/internal/monitor"
+	"github.com/dougmartin/pook-cli/internal/watch"
 )
 
-// Messages the shell understands. Phase 3's watcher is what emits the first
-// three; they are defined here because the shell owns the chrome they drive.
-type (
-	// HeartbeatMsg updates the status bar's "last change Ns ago" line.
-	HeartbeatMsg struct {
-		Path string
-		At   time.Time
-	}
-	// AlertMsg sets the watched-path alert. An empty Text clears it.
-	AlertMsg struct {
-		Text string
-	}
-	// ActivityMsg raises the activity dot on one tab.
-	ActivityMsg struct {
-		Tab int
-	}
-	// RefreshMsg asks every tab to reload from disk.
-	RefreshMsg struct{}
-)
+// ActivityMsg raises the activity dot on one tab.
+type ActivityMsg struct {
+	Tab int
+}
+
+// RefreshMsg hands every tab the latest snapshot.
+type RefreshMsg struct {
+	Snap monitor.Snapshot
+}
 
 // tickMsg drives the status bar clock, so "last change Ns ago" counts up on
-// its own without any file activity.
+// its own without any file activity, and the idle check gets a heartbeat.
 type tickMsg time.Time
 
 func tick() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
 
-// heartbeat is the last observed change to anything pook watches.
-type heartbeat struct {
-	seen bool
-	at   time.Time
-	path string
-}
-
 // Model is the root. Exactly one pane is visible at a time, which is what
 // keeps the layout math to a single subtraction and the update loop flat.
 type Model struct {
-	repo git.Repo
+	repo    git.Repo
+	mon     *monitor.Monitor
+	watcher *watch.Watcher
 
 	width, height int
 	ready         bool
@@ -62,21 +50,33 @@ type Model struct {
 	modal   layer
 	overlay layer
 
-	hb    heartbeat
-	alert string
+	// The last refresh, and the derived chrome state.
+	snap     monitor.Snapshot
+	events   []monitor.Event
+	activity monitor.Activity
+	hasAct   bool
+	alert    string
+	banner   string
+
+	// One refresh runs at a time; activity during it queues exactly one more.
+	refreshing    bool
+	refreshQueued bool
 
 	// now is injectable so golden tests render a fixed heartbeat.
 	now func() time.Time
 }
 
-// New builds the shell for a repo. The panes are placeholders until their
-// phases land.
-func New(repo git.Repo) Model {
+// New builds the shell for a repo. mon and w may be nil, which is what the
+// view tests use: the shell then renders whatever it is sent and watches
+// nothing.
+func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher) Model {
 	return Model{
-		repo: repo,
-		now:  time.Now,
+		repo:    repo,
+		mon:     mon,
+		watcher: w,
+		now:     time.Now,
 		tabs: []Tab{
-			NewPlaceholderTab("Changes", "uncommitted changes, phase 4"),
+			NewPlaceholderTab("Changes", "uncommitted changes, phase 4").countingFiles(),
 			NewPlaceholderTab("Branch", "commits on this branch, phase 5"),
 			NewPlaceholderTab("Session", "live Claude Code session, phase 5"),
 			NewPlaceholderTab("oob", "out-of-band files, phase 5"),
@@ -91,11 +91,21 @@ func (m Model) WithClock(now func() time.Time) Model {
 	return m
 }
 
-func (m Model) Init() tea.Cmd { return tick() }
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(tick(), refreshCmd(m.mon), waitForWatch(m.watcher))
+}
 
-// paneHeight is the whole layout calculation: the terminal minus the two bars.
+// paneHeight is the layout calculation: the terminal minus the chrome.
 func (m Model) paneHeight() int {
-	return max(0, m.height-tabBarHeight-statusBarHeight)
+	return max(0, m.height-tabBarHeight-statusBarHeight-m.bannerHeight())
+}
+
+// bannerHeight is one row while the idle warning is up, zero otherwise.
+func (m Model) bannerHeight() int {
+	if m.banner == "" {
+		return 0
+	}
+	return 1
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -104,19 +114,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = msg.Width, msg.Height
 		m.ready = true
 		// Tabs are told the pane size, never the terminal size, so no tab
-		// has to know that the bars exist.
+		// has to know that the chrome exists.
 		mm, cmd := m.broadcast(tea.WindowSizeMsg{Width: m.width, Height: m.paneHeight()})
 		return mm, cmd
 
 	case tickMsg:
-		return m, tick()
+		return m, tea.Batch(tick(), idleCmd(m.mon))
 
-	case HeartbeatMsg:
-		m.hb = heartbeat{seen: true, at: msg.At, path: msg.Path}
-		return m, nil
+	case watchMsg:
+		// Keep listening, and fold this into a refresh.
+		mm, cmd := m.scheduleRefresh()
+		return mm, tea.Batch(cmd, waitForWatch(m.watcher))
 
-	case AlertMsg:
-		m.alert = msg.Text
+	case refreshedMsg:
+		mm, cmd := m.applyRefresh(msg)
+		return mm, cmd
+
+	case idleMsg:
+		m.banner = msg.Text
 		return m, nil
 
 	case ActivityMsg:
@@ -129,6 +144,90 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	mm, cmd := m.broadcast(msg)
 	return mm, cmd
+}
+
+// scheduleRefresh starts a refresh, or notes that one more is wanted when the
+// running one finishes. Without the queue an agent writing continuously would
+// start a refresh per batch.
+func (m Model) scheduleRefresh() (Model, tea.Cmd) {
+	if m.refreshing {
+		m.refreshQueued = true
+		return m, nil
+	}
+	if m.mon == nil {
+		return m, nil
+	}
+	m.refreshing = true
+	return m, refreshCmd(m.mon)
+}
+
+// applyRefresh folds a completed refresh into the view.
+func (m Model) applyRefresh(msg refreshedMsg) (Model, tea.Cmd) {
+	m.refreshing = false
+
+	// A failed refresh keeps the previous snapshot on screen: git failing
+	// mid-write should not blank the pane.
+	if msg.Snap.Err == nil {
+		m.snap = msg.Snap
+	}
+	m.events = msg.Events
+	m.activity, m.hasAct = msg.Activity, msg.HasActivity
+	m.alert = watchedAlert(msg.Snap.WatchedPaths)
+
+	// Fresh activity retires the idle banner.
+	if msg.Snap.FilesChanged || msg.Snap.BranchChanged || msg.Snap.OOBChanged {
+		m.banner = ""
+	}
+
+	cmds := []tea.Cmd{}
+
+	// Newly watched namespace directories, and a transcript folder that only
+	// appeared after startup, are picked up here.
+	if m.watcher != nil {
+		for _, g := range msg.Snap.OOB {
+			m.watcher.AddDir(g.Dir)
+		}
+	}
+
+	mm, cmd := m.broadcast(RefreshMsg{Snap: m.snap})
+	m = mm
+	cmds = append(cmds, cmd)
+
+	// Tabs the user is not looking at get a dot.
+	for tab, changed := range map[int]bool{
+		TabChanges: msg.Snap.FilesChanged,
+		TabBranch:  msg.Snap.BranchChanged,
+		TabOOB:     msg.Snap.OOBChanged,
+	} {
+		if !changed || tab == m.active {
+			continue
+		}
+		next, c := m.routeTo(tab, ActivityMsg{Tab: tab})
+		m = next
+		cmds = append(cmds, c)
+	}
+
+	if m.refreshQueued {
+		m.refreshQueued = false
+		next, c := m.scheduleRefresh()
+		m = next
+		cmds = append(cmds, c)
+	}
+
+	return m, tea.Batch(cmds...)
+}
+
+// watchedAlert is the status bar warning for changed files matching a watched
+// glob.
+func watchedAlert(paths []string) string {
+	switch len(paths) {
+	case 0:
+		return ""
+	case 1:
+		return "watched: " + paths[0]
+	default:
+		return fmt.Sprintf("watched: %s +%d more", paths[0], len(paths)-1)
+	}
 }
 
 // handleKey is the routing rule the whole design rests on: modal, then
@@ -169,7 +268,7 @@ func (m Model) handleGlobalKey(k tea.KeyMsg) (bool, Model, tea.Cmd) {
 		return true, m, nil
 
 	case keyTicker.Matches(k):
-		m.overlay = tickerOverlay{}
+		m.overlay = newTickerOverlay(m.events, m.now())
 		return true, m, nil
 
 	case keyClipboard.Matches(k):
@@ -177,8 +276,16 @@ func (m Model) handleGlobalKey(k tea.KeyMsg) (bool, Model, tea.Cmd) {
 		return true, m, nil
 
 	case keyRefresh.Matches(k):
-		mm, cmd := m.broadcast(RefreshMsg{})
+		mm, cmd := m.scheduleRefresh()
 		return true, mm, cmd
+
+	case keyClose.Matches(k):
+		// With no layer open, esc dismisses the idle banner.
+		if m.banner != "" {
+			m.banner = ""
+			return true, m, nil
+		}
+		return false, m, nil
 
 	case keyNextTab.Matches(k):
 		return true, m.selectTab(m.active + 1), nil
@@ -237,8 +344,8 @@ func (m Model) View() string {
 
 	rows := []string{m.tabBar()}
 
-	// A terminal short enough to leave no pane still gets both bars, and one
-	// shorter than the bars themselves gets as many as fit.
+	// A terminal short enough to leave no pane still gets its chrome, and one
+	// shorter than the chrome itself gets as many rows as fit.
 	if h := m.paneHeight(); h > 0 {
 		var body string
 		switch {
@@ -250,6 +357,9 @@ func (m Model) View() string {
 			body = m.tabs[m.active].View(m.width, h)
 		}
 		rows = append(rows, fitBlock(body, m.width, h))
+	}
+	if m.banner != "" {
+		rows = append(rows, m.bannerRow())
 	}
 	rows = append(rows, m.statusBar())
 

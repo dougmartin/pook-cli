@@ -49,6 +49,10 @@ type PlaceholderTab struct {
 	title string
 	note  string
 	badge Badge
+
+	// counts makes the badge track the number of changed files. Phase 4's
+	// Changes tab takes this over.
+	counts bool
 }
 
 // NewPlaceholderTab returns a tab that renders note in the middle of its pane.
@@ -65,9 +69,20 @@ func (t PlaceholderTab) Focus() Tab {
 	return t
 }
 
+// countingFiles makes this tab badge the number of changed files.
+func (t PlaceholderTab) countingFiles() PlaceholderTab {
+	t.counts = true
+	return t
+}
+
 func (t PlaceholderTab) Update(msg tea.Msg) (Tab, tea.Cmd) {
-	if _, ok := msg.(ActivityMsg); ok {
+	switch msg := msg.(type) {
+	case ActivityMsg:
 		t.badge.Dot = true
+	case RefreshMsg:
+		if t.counts {
+			t.badge.Count = len(msg.Snap.Files)
+		}
 	}
 	return t, nil
 }

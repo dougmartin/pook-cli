@@ -30,7 +30,7 @@ func TestHelpShowsEveryBinding(t *testing.T) {
 
 // Once tabs carry their own keys the list spills into columns.
 func TestHelpColumnizesTabBindings(t *testing.T) {
-	m := New(gitRepoForTest()).WithClock(fixedClock)
+	m := New(gitRepoForTest(), nil, nil).WithClock(fixedClock)
 	for i, t := range m.tabs {
 		m.tabs[i] = bindingTab{title: t.Title(), bindings: fakeBindings(t.Title(), 8)}
 	}

@@ -7,6 +7,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
+
+	"github.com/dougmartin/pook-cli/internal/monitor"
 )
 
 // The frame tests drive Update and View directly, which is deterministic but
@@ -15,7 +17,7 @@ import (
 // up as a hang or a missing frame rather than a passing unit test.
 func TestProgramDrivesTabsAndQuits(t *testing.T) {
 	tm := teatest.NewTestModel(t,
-		New(gitRepoForTest()).WithClock(fixedClock),
+		New(gitRepoForTest(), nil, nil).WithClock(fixedClock),
 		teatest.WithInitialTermSize(testWidth, testHeight),
 	)
 
@@ -49,15 +51,16 @@ func TestProgramDrivesTabsAndQuits(t *testing.T) {
 // through a direct Update call.
 func TestProgramRendersHeartbeat(t *testing.T) {
 	tm := teatest.NewTestModel(t,
-		New(gitRepoForTest()).WithClock(fixedClock),
+		New(gitRepoForTest(), nil, nil).WithClock(fixedClock),
 		teatest.WithInitialTermSize(testWidth, testHeight),
 	)
 
-	tm.Send(HeartbeatMsg{Path: "internal/ui/app.go", At: testNow.Add(-9 * time.Second)})
-	waitForOutput(t, tm, "last change 9s ago")
-
-	tm.Send(AlertMsg{Text: "package.json touched"})
-	waitForOutput(t, tm, "package.json touched")
+	tm.Send(refreshedMsg{
+		Snap:        monitor.Snapshot{WatchedPaths: []string{"package.json"}},
+		Activity:    monitor.Activity{At: testNow.Add(-9 * time.Second), Text: "internal/ui/app.go"},
+		HasActivity: true,
+	})
+	waitForOutput(t, tm, "last change 9s ago", "watched: package.json")
 
 	tm.Send(key("q"))
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))

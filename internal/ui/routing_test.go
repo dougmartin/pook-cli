@@ -148,6 +148,7 @@ func TestTabsReceivePaneSize(t *testing.T) {
 	}
 }
 
+// A completed refresh hands every tab the new snapshot.
 func TestRefreshReachesEveryTab(t *testing.T) {
 	counts := make([]int, 5)
 	m := newTestModel(t)
@@ -155,11 +156,33 @@ func TestRefreshReachesEveryTab(t *testing.T) {
 		m.tabs[i] = refreshProbe{count: &counts[i]}
 	}
 
-	m = press(m, "r")
+	m = apply(m, refreshedMsg{})
 	for i, n := range counts {
 		if n != 1 {
 			t.Fatalf("tab %d saw %d refreshes, want 1", i, n)
 		}
+	}
+}
+
+// Activity while a refresh is running queues exactly one more, rather than
+// starting a refresh per batch while an agent writes continuously.
+func TestRefreshesDoNotPileUp(t *testing.T) {
+	m := newTestModel(t)
+	m.refreshing = true
+
+	for range 5 {
+		m, _ = m.scheduleRefresh()
+	}
+	if !m.refreshQueued {
+		t.Fatal("activity during a refresh did not queue another")
+	}
+
+	m, _ = m.applyRefresh(refreshedMsg{})
+	if m.refreshQueued {
+		t.Error("the queued refresh was not consumed")
+	}
+	if m.refreshing {
+		t.Error("a refresh is still marked in flight with no monitor to run it")
 	}
 }
 

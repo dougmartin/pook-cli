@@ -3,9 +3,12 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/dougmartin/pook-cli/internal/monitor"
 )
 
 // layer is a modal or overlay drawn over the pane. Update returns the layer to
@@ -109,9 +112,33 @@ func (h helpOverlay) View(width, height int) string {
 	)
 }
 
-// tickerOverlay is the activity ticker. Phase 3 fills it with the rolling log
-// of the last 50 file events; for now it reports that nothing is watched yet.
-type tickerOverlay struct{}
+// tickerOverlay is the activity ticker: the rolling log of the last 50 file
+// and commit events. Newest first, so the most recent activity is visible
+// without scrolling.
+type tickerOverlay struct {
+	body string
+}
+
+func newTickerOverlay(events []monitor.Event, now time.Time) tickerOverlay {
+	if len(events) == 0 {
+		return tickerOverlay{body: styleDim.Render("nothing has happened yet")}
+	}
+
+	var b strings.Builder
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+
+		text := styleDim.Render(e.Text)
+		if e.Watched {
+			text = styleWatched.Render(e.Text)
+		}
+		fmt.Fprintf(&b, "%s  %s", styleKey.Render(pad(formatAgo(now.Sub(e.At))+" ago", 9)), text)
+	}
+	return tickerOverlay{body: b.String()}
+}
 
 func (t tickerOverlay) Update(msg tea.Msg) (layer, tea.Cmd) {
 	k, ok := msg.(tea.KeyMsg)
@@ -124,7 +151,7 @@ func (t tickerOverlay) Update(msg tea.Msg) (layer, tea.Cmd) {
 func (t tickerOverlay) View(width, height int) string {
 	return panel(
 		styleTitle.Render("Activity")+"  "+styleDim.Render("esc closes"),
-		styleDim.Render("no events yet, watchers arrive in phase 3"),
+		t.body,
 		width, height,
 	)
 }
