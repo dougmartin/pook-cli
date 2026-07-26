@@ -35,6 +35,16 @@ Optional, at `$XDG_CONFIG_HOME/pook/config.toml`. Every key has a default, so no
 
 The prompt library lives beside it at `prompts.json`, and is shared by every running instance.
 
+## Install
+
+```bash
+./install.sh                     # build and install to ~/.local/bin
+./install.sh --test              # run the suite first
+PREFIX=/usr/local/bin ./install.sh
+```
+
+It warns if the target is not on your PATH, or if an older `pook` earlier on PATH would win.
+
 ## Build
 
 ```bash
