@@ -48,7 +48,7 @@ func (b Binding) Display() string {
 
 // Global bindings, available from every tab.
 var (
-	keySelectTab = Binding{Keys: []string{"1", "2", "3", "4", "5"}, Label: "1-5", Help: "select tab"}
+	keySelectTab = Binding{Keys: []string{"1", "2", "3", "4", "5", "6"}, Label: "1-6", Help: "select tab"}
 	keyNextTab   = Binding{Keys: []string{"tab", "right"}, Label: "tab / right", Help: "next tab"}
 	keyPrevTab   = Binding{Keys: []string{"shift+tab", "left"}, Label: "shift-tab / left", Help: "previous tab"}
 	keyTicker    = Binding{Keys: []string{"a"}, Help: "activity ticker"}

@@ -183,7 +183,7 @@ func TestFormatAgo(t *testing.T) {
 func TestTabBarDividers(t *testing.T) {
 	bar := stripStyles(strings.SplitN(newTestModel(t).View(), "\n", 2)[0])
 
-	want := "1 Changes | 2 Branch | 3 Session | 4 Prompts | 5 oob"
+	want := "1 Changes | 2 Branch | 3 Graph | 4 Session | 5 Prompts | 6 oob"
 	if !strings.Contains(bar, want) {
 		t.Errorf("tab bar = %q, want it to contain %q", bar, want)
 	}
@@ -205,7 +205,7 @@ func TestTabBarDividersWithoutTheOOBTab(t *testing.T) {
 	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 
 	bar := stripStyles(strings.SplitN(m.View(), "\n", 2)[0])
-	want := "1 Changes | 2 Branch | 3 Session | 4 Prompts"
+	want := "1 Changes | 2 Branch | 3 Graph | 4 Session | 5 Prompts"
 	if !strings.Contains(bar, want) {
 		t.Errorf("tab bar = %q, want it to contain %q", bar, want)
 	}

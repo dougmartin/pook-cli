@@ -13,6 +13,7 @@ import (
 const (
 	TabChanges = iota
 	TabBranch
+	TabGraph
 	TabSession
 	TabPrompts
 	TabOOB

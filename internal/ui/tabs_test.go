@@ -198,7 +198,7 @@ func oobTab(m Model) *OOBTab { return m.tabs[TabOOB].(*OOBTab) }
 func oobModel(t *testing.T) Model {
 	t.Helper()
 	m := apply(newTestModel(t), refreshedMsg{Snap: monitor.Snapshot{OOB: sampleOOB()}})
-	return press(m, "5")
+	return press(m, "6")
 }
 
 func TestFrameOOBList(t *testing.T) {
@@ -289,7 +289,7 @@ func sessionTab(m Model) *SessionTab { return m.tabs[TabSession].(*SessionTab) }
 
 func sessionModel(t *testing.T) Model {
 	t.Helper()
-	m := press(newTestModel(t), "3")
+	m := press(newTestModel(t), "4")
 
 	tab := sessionTab(m)
 	tab.now = fixedClock
@@ -471,7 +471,7 @@ func TestSessionCopyPutsTheRawTextOnTheClipboard(t *testing.T) {
 }
 
 func TestSessionWithNoMessages(t *testing.T) {
-	m := press(newTestModel(t), "3")
+	m := press(newTestModel(t), "4")
 	view := m.View()
 
 	if !strings.Contains(view, "no session found") {
@@ -488,8 +488,8 @@ func TestOOBTabIsAbsentWithoutAnOOBHome(t *testing.T) {
 	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 
-	if got := len(m.tabs); got != 4 {
-		t.Fatalf("tabs = %d, want 4 without an oob home", got)
+	if got := len(m.tabs); got != 5 {
+		t.Fatalf("tabs = %d, want 5 without an oob home", got)
 	}
 	for _, tab := range m.tabs {
 		if tab.Title() == "oob" {
@@ -505,7 +505,7 @@ func TestOOBTabIsAbsentWithoutAnOOBHome(t *testing.T) {
 
 	// And it contributes no section to help. Its bindings are all shared with
 	// other tabs, so the section heading is what has to be gone.
-	help := scrollThroughHelp(t, m)
+	help := scrollThroughHelp(t, m, testWidth, testHeight)
 	if strings.Contains(help, "oob") {
 		t.Errorf("help still has an oob section:\n%s", help)
 	}
@@ -513,13 +513,13 @@ func TestOOBTabIsAbsentWithoutAnOOBHome(t *testing.T) {
 
 // The digit that would select it does nothing, rather than landing somewhere
 // unexpected.
-func TestDigitFiveDoesNothingWithoutTheOOBTab(t *testing.T) {
+func TestTheOOBDigitDoesNothingWithoutTheTab(t *testing.T) {
 	withoutOOB(t)
 
 	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 
-	m = press(m, "3", "5")
+	m = press(m, "4", "6")
 	if m.active != TabSession {
 		t.Errorf("active = %d, want it to stay on Session", m.active)
 	}
@@ -561,7 +561,7 @@ func TestOOBActivityIsIgnoredWithoutTheTab(t *testing.T) {
 func TestTabOrder(t *testing.T) {
 	m := newTestModel(t)
 
-	want := []string{"Changes", "Branch", "Session", "Prompts", "oob"}
+	want := []string{"Changes", "Branch", "Graph", "Session", "Prompts", "oob"}
 	for i, title := range want {
 		if i >= len(m.tabs) {
 			t.Fatalf("only %d tabs, want %d", len(m.tabs), len(want))

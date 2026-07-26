@@ -25,7 +25,7 @@ func promptsModel(t *testing.T) Model {
 	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 	promptsTab(m).Load()
-	return press(m, "4")
+	return press(m, "5")
 }
 
 func promptsTab(m Model) *PromptsTab { return m.tabs[TabPrompts].(*PromptsTab) }
@@ -371,7 +371,7 @@ func TestEmptyLibrary(t *testing.T) {
 	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 	promptsTab(m).Load()
-	m = press(m, "4")
+	m = press(m, "5")
 
 	if !strings.Contains(m.View(), "press n to add one") {
 		t.Errorf("an empty library does not say what to do:\n%s", m.View())
@@ -399,7 +399,7 @@ func TestLongPromptsWrap(t *testing.T) {
 	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 	promptsTab(m).Load()
-	m = press(m, "4", " ")
+	m = press(m, "5", " ")
 
 	frame := m.View()
 	requireFrameSize(t, frame, testWidth, testHeight)
@@ -435,7 +435,7 @@ func TestPromptWrappingFollowsAResize(t *testing.T) {
 	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: 100, Height: 30})
 	promptsTab(m).Load()
-	m = press(m, "4", " ")
+	m = press(m, "5", " ")
 
 	wide := len(promptsTab(m).acc.rows[0].body)
 

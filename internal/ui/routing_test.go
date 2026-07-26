@@ -10,7 +10,7 @@ import (
 
 func TestDigitSelectsTab(t *testing.T) {
 	m := newTestModel(t)
-	for i, digit := range []string{"1", "2", "3", "4", "5"} {
+	for i, digit := range []string{"1", "2", "3", "4", "5", "6"} {
 		m = press(m, digit)
 		if m.active != i {
 			t.Fatalf("after %q active = %d, want %d", digit, m.active, i)
@@ -19,7 +19,7 @@ func TestDigitSelectsTab(t *testing.T) {
 }
 
 func TestDigitBeyondTabsIsIgnored(t *testing.T) {
-	m := press(newTestModel(t), "3", "9")
+	m := press(newTestModel(t), "4", "9")
 	if m.active != TabSession {
 		t.Fatalf("active = %d, want %d", m.active, TabSession)
 	}
@@ -54,7 +54,7 @@ func TestTabCyclingWraps(t *testing.T) {
 
 // The arrows belong to the shell, so the Session tab navigates with h and l.
 func TestArrowsCycleTabsFromTheSessionTab(t *testing.T) {
-	m := press(newTestModel(t), "3")
+	m := press(newTestModel(t), "4")
 
 	m = press(m, "right")
 	if m.active != TabPrompts {
@@ -115,7 +115,7 @@ func TestModalSwallowsGlobalKeys(t *testing.T) {
 	if m.modal != nil {
 		t.Fatal("esc did not close the modal")
 	}
-	m = press(m, "3")
+	m = press(m, "4")
 	if m.active != TabSession {
 		t.Fatalf("tab switching still inert after the modal closed, active = %d", m.active)
 	}
@@ -200,7 +200,7 @@ func TestTabsReceivePaneSize(t *testing.T) {
 
 // A completed refresh hands every tab the new snapshot.
 func TestRefreshReachesEveryTab(t *testing.T) {
-	counts := make([]int, 5)
+	counts := make([]int, len(newTestModel(t).tabs))
 	m := newTestModel(t)
 	for i := range m.tabs {
 		m.tabs[i] = refreshProbe{count: &counts[i]}

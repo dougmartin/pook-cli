@@ -1,24 +1,24 @@
- pook  1 Changes | 2 Branch | 3 Session | 4 Prompts | 5 oob                     
+ pook  1 Changes | 2 Branch | 3 Graph | 4 Session | 5 Prompts | 6 oob           
   ╭──────────────────────────────────────────────────────────────────────────╮  
-  │ Keys  esc closes · j/k scrolls · 1-18 of 44                              │  
+  │ Keys  esc closes · j/k scrolls · 1-18 of 43                              │  
   │                                                                          │  
-  │ Global                               Branch                              │  
-  │ 1-5               select tab         j / down     move down              │  
+  │ Global                               Graph                               │  
+  │ 1-6               select tab         j / down     move down              │  
   │ tab / right       next tab           k / up       move up                │  
   │ shift-tab / left  previous tab       g            top                    │  
   │ a                 activity ticker    G            bottom                 │  
   │ c                 clipboard modal    ctrl-d       page down              │  
   │ r                 force refresh      ctrl-u       page up                │  
-  │ ?                 help               space        expand / collapse      │  
-  │ q                 quit               zR           expand all             │  
-  │                                      zM           collapse all           │  
-  │ Changes                                                                  │  
-  │ j / down     move down               Session                             │  
-  │ k / up       move up                 h            previous message       │  
-  │ g            top                     l            next message           │  
-  │ G            bottom                  H            previous user message  │  
-  │ ctrl-d       page down               L            next user message      │  
-  │ ctrl-u       page up                 $            jump to live           │  
-  │ space        expand / collapse       y            copy raw message       │  
+  │ ?                 help               s            subject / compact      │  
+  │ q                 quit               y            copy commit hash       │  
+  │                                                                          │  
+  │ Changes                              Session                             │  
+  │ j / down     move down               h            previous message       │  
+  │ k / up       move up                 l            next message           │  
+  │ g            top                     H            previous user message  │  
+  │ G            bottom                  L            next user message      │  
+  │ ctrl-d       page down               $            jump to live           │  
+  │ ctrl-u       page up                 y            copy raw message       │  
+  │ space        expand / collapse                                           │  
   ╰──────────────────────────────────────────────────────────────────────────╯  
  watching for changes                                           ? help · q quit 

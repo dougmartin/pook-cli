@@ -88,6 +88,7 @@ func tabsFor(repo git.Repo, store *prompts.Store) []Tab {
 	tabs := []Tab{
 		NewChangesTab(repo),
 		NewBranchTab(repo),
+		NewGraphTab(repo),
 		NewSessionTab(repo.Root),
 		NewPromptsTab(store),
 	}
@@ -225,6 +226,7 @@ func (m Model) applyRefresh(msg refreshedMsg) (Model, tea.Cmd) {
 	dots := map[int]bool{
 		TabChanges: msg.Snap.FilesChanged,
 		TabBranch:  msg.Snap.BranchChanged,
+		TabGraph:   msg.Snap.BranchChanged,
 	}
 	if m.hasOOB() {
 		dots[TabOOB] = msg.Snap.OOBChanged

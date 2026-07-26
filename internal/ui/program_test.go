@@ -24,7 +24,7 @@ func TestProgramDrivesTabsAndQuits(t *testing.T) {
 	// The first frame carries the pane and both bars.
 	waitForOutput(t, tm, "no changes against HEAD", "watching for changes", "1 Changes")
 
-	tm.Send(key("3"))
+	tm.Send(key("4"))
 	waitForOutput(t, tm, "no session found")
 
 	tm.Send(key("?"))
