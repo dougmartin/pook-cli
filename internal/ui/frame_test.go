@@ -69,7 +69,7 @@ func TestFrameClipboardModal(t *testing.T) {
 // A terminal too narrow for the status bar's two segments must still produce a
 // well-formed frame.
 func TestFrameNarrow(t *testing.T) {
-	m := New(gitRepoForTest(), nil, nil).WithClock(fixedClock)
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: 32, Height: 12}, refreshedMsg{
 		Activity:    monitor.Activity{At: testNow.Add(-5 * time.Second), Text: "internal/ui/app.go"},
 		HasActivity: true,
@@ -82,7 +82,7 @@ func TestFrameNarrow(t *testing.T) {
 
 // A terminal so short that no pane fits still renders both bars.
 func TestFrameTiny(t *testing.T) {
-	m := New(gitRepoForTest(), nil, nil).WithClock(fixedClock)
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
 	m = apply(m, tea.WindowSizeMsg{Width: 20, Height: 2})
 
 	frame := m.View()
@@ -93,7 +93,7 @@ func TestFrameTiny(t *testing.T) {
 // Before the first WindowSizeMsg there is no size to lay out against, so the
 // model renders nothing rather than guessing.
 func TestFrameBeforeSize(t *testing.T) {
-	if got := New(gitRepoForTest(), nil, nil).View(); got != "" {
+	if got := New(gitRepoForTest(), nil, nil, nil).View(); got != "" {
 		t.Fatalf("view before window size = %q, want empty", got)
 	}
 }

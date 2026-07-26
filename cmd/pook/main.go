@@ -41,6 +41,7 @@ func run() error {
 
 	cfg := loadConfig()
 	mon := monitor.New(repo, cfg)
+	store := loadPromptStore()
 
 	watcher, err := watch.New(watch.Debounce)
 	if err != nil {
@@ -51,7 +52,7 @@ func run() error {
 
 	// Alternate buffer, and deliberately no mouse options: pook is
 	// keyboard-only, so mouse reporting is never enabled.
-	p := tea.NewProgram(ui.New(repo, mon, watcher), tea.WithAltScreen())
+	p := tea.NewProgram(ui.New(repo, mon, watcher, store), tea.WithAltScreen())
 	_, err = p.Run()
 	return err
 }
@@ -70,6 +71,15 @@ func loadConfig() config.Config {
 		fmt.Fprintf(os.Stderr, "pook: ignoring %s: %v\n", path, err)
 	}
 	return cfg
+}
+
+// loadPromptStore opens the shared prompt library.
+func loadPromptStore() *prompts.Store {
+	path, err := prompts.DefaultPath()
+	if err != nil {
+		return nil
+	}
+	return prompts.NewStore(path)
 }
 
 // addWatches registers everything pook follows: the working tree, .git, the

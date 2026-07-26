@@ -41,7 +41,7 @@ func gitRepoForTest() git.Repo {
 // newTestModel is a shell sized to a standard terminal with a stopped clock.
 func newTestModel(t *testing.T) Model {
 	t.Helper()
-	m := New(gitRepoForTest(), nil, nil).WithClock(fixedClock)
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
 	return apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
 }
 

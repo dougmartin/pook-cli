@@ -17,7 +17,7 @@ import (
 // up as a hang or a missing frame rather than a passing unit test.
 func TestProgramDrivesTabsAndQuits(t *testing.T) {
 	tm := teatest.NewTestModel(t,
-		New(gitRepoForTest(), nil, nil).WithClock(fixedClock),
+		New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock),
 		teatest.WithInitialTermSize(testWidth, testHeight),
 	)
 
@@ -51,7 +51,7 @@ func TestProgramDrivesTabsAndQuits(t *testing.T) {
 // through a direct Update call.
 func TestProgramRendersHeartbeat(t *testing.T) {
 	tm := teatest.NewTestModel(t,
-		New(gitRepoForTest(), nil, nil).WithClock(fixedClock),
+		New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock),
 		teatest.WithInitialTermSize(testWidth, testHeight),
 	)
 

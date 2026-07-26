@@ -11,6 +11,7 @@ import (
 
 	"github.com/dougmartin/pook-cli/internal/git"
 	"github.com/dougmartin/pook-cli/internal/monitor"
+	"github.com/dougmartin/pook-cli/internal/prompts"
 	"github.com/dougmartin/pook-cli/internal/watch"
 )
 
@@ -69,7 +70,7 @@ type Model struct {
 // New builds the shell for a repo. mon and w may be nil, which is what the
 // view tests use: the shell then renders whatever it is sent and watches
 // nothing.
-func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher) Model {
+func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher, store *prompts.Store) Model {
 	return Model{
 		repo:    repo,
 		mon:     mon,
@@ -80,7 +81,7 @@ func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher) Model {
 			NewBranchTab(repo),
 			NewSessionTab(repo.Root),
 			NewOOBTab(),
-			NewPlaceholderTab("Prompts", "prompt library, phase 6"),
+			NewPromptsTab(store),
 		},
 	}
 }
@@ -92,6 +93,11 @@ func (m Model) WithClock(now func() time.Time) Model {
 }
 
 func (m Model) Init() tea.Cmd {
+	// The prompt library is read once at startup; the watcher keeps it
+	// current after that.
+	if tab, ok := m.tabs[TabPrompts].(*PromptsTab); ok {
+		tab.Load()
+	}
 	return tea.Batch(tick(), refreshCmd(m.mon), waitForWatch(m.watcher))
 }
 
