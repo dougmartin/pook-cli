@@ -1,0 +1,110 @@
+package ui
+
+import (
+	"os"
+	"strings"
+	"testing"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
+
+	"github.com/dougmartin/pook-cli/internal/git"
+)
+
+// Golden frames are compared as plain text: color is forced off so a failing
+// diff is readable, and so the goldens do not churn when a palette changes.
+// Color and contrast are on the spec's human-review list for that reason.
+func TestMain(m *testing.M) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+	os.Exit(m.Run())
+}
+
+const (
+	testWidth  = 80
+	testHeight = 24
+)
+
+var testNow = time.Date(2026, 7, 26, 13, 45, 0, 0, time.UTC)
+
+func fixedClock() time.Time { return testNow }
+
+// gitRepoForTest is a repo value with no side effects: phase 0 only reads its
+// path, and never runs git.
+func gitRepoForTest() git.Repo {
+	return git.Repo{Root: "/home/doug/projects/pook-cli"}
+}
+
+// newTestModel is a shell sized to a standard terminal with a stopped clock.
+func newTestModel(t *testing.T) Model {
+	t.Helper()
+	m := New(gitRepoForTest()).WithClock(fixedClock)
+	return apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+}
+
+// apply runs messages through the model in order, the way the program would.
+func apply(m Model, msgs ...tea.Msg) Model {
+	for _, msg := range msgs {
+		next, _ := m.Update(msg)
+		m = next.(Model)
+	}
+	return m
+}
+
+// applyCmd is apply for a single message, keeping the returned command so a
+// test can assert on what the model asked the runtime to do.
+func applyCmd(m Model, msg tea.Msg) (Model, tea.Cmd) {
+	next, cmd := m.Update(msg)
+	return next.(Model), cmd
+}
+
+var namedKeys = map[string]tea.KeyType{
+	"tab":       tea.KeyTab,
+	"shift+tab": tea.KeyShiftTab,
+	"esc":       tea.KeyEsc,
+	"enter":     tea.KeyEnter,
+	"space":     tea.KeySpace,
+	"ctrl+c":    tea.KeyCtrlC,
+}
+
+// key builds the KeyMsg a terminal would produce for a key name.
+func key(s string) tea.KeyMsg {
+	if t, ok := namedKeys[s]; ok {
+		return tea.KeyMsg{Type: t}
+	}
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+}
+
+// press sends a sequence of keys.
+func press(m Model, names ...string) Model {
+	for _, n := range names {
+		m = apply(m, key(n))
+	}
+	return m
+}
+
+// isQuit reports whether a command is tea.Quit, by running it.
+func isQuit(cmd tea.Cmd) bool {
+	if cmd == nil {
+		return false
+	}
+	_, ok := cmd().(tea.QuitMsg)
+	return ok
+}
+
+// requireFrameSize asserts the layout invariant every frame must hold: exactly
+// the terminal's height in rows, and no row wider than the terminal. This is
+// what keeps the status bar pinned to the last line.
+func requireFrameSize(t *testing.T, frame string, width, height int) {
+	t.Helper()
+	lines := strings.Split(frame, "\n")
+	if len(lines) != height {
+		t.Fatalf("frame has %d lines, want %d", len(lines), height)
+	}
+	for i, line := range lines {
+		if w := lipgloss.Width(line); w > width {
+			t.Fatalf("line %d is %d cells wide, want at most %d: %q", i, w, width, line)
+		}
+	}
+}

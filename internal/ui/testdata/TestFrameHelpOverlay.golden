@@ -1,0 +1,24 @@
+ pook  1 Changes  2 Branch  3 Session  4 oob  5 Prompts                         
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+  ╭──────────────────────────────────────────────────────────────────────────╮  
+  │ Keys  esc closes                                                         │  
+  │                                                                          │  
+  │ Global                                                                   │  
+  │ 1-5          select tab                                                  │  
+  │ tab          next tab                                                    │  
+  │ shift-tab    previous tab                                                │  
+  │ a            activity ticker                                             │  
+  │ c            clipboard modal                                             │  
+  │ r            force refresh                                               │  
+  │ ?            help                                                        │  
+  │ q            quit                                                        │  
+  ╰──────────────────────────────────────────────────────────────────────────╯  
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+ watching for changes                                           ? help · q quit 

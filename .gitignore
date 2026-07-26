@@ -1,0 +1,4 @@
+/pook
+/dist/
+*.test
+*.out
