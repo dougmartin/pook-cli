@@ -227,7 +227,7 @@ func TestOOBContentIsNotColorizedAsADiff(t *testing.T) {
 	groups[0].Files[0].Content = "+not an addition\n-not a removal\n"
 
 	m := apply(newTestModel(t), refreshedMsg{Snap: monitor.Snapshot{OOB: groups}})
-	body := oobBody(groups[0].Files[0])
+	body := oobBody(groups[0].Files[0], 60)
 
 	if len(body) != 2 {
 		t.Fatalf("body = %v", body)

@@ -8,6 +8,13 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// accordionPrefix is the two columns every row spends on the cursor marker,
+// and bodyIndent the indent a tab gives its expanded content.
+const (
+	accordionPrefix = 2
+	bodyIndent      = 4
+)
+
 // accordionRow is one collapsible entry.
 type accordionRow struct {
 	// key identifies the row across refreshes, so expansion and the cursor

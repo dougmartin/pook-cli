@@ -136,9 +136,15 @@ func (t *PromptsTab) Focus() Tab {
 func (t *PromptsTab) Update(msg tea.Msg) (Tab, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		reflow := msg.Width != t.width
 		t.width, t.height = msg.Width, msg.Height
 		t.body.SetWidth(max(10, msg.Width-2))
 		t.body.SetHeight(max(3, msg.Height-6))
+		if reflow {
+			// Prompt bodies are wrapped to the pane, so a resize rebuilds
+			// them.
+			t.rebuild()
+		}
 
 	case ActivityMsg:
 		t.badge.Dot = true
@@ -198,7 +204,7 @@ func (t *PromptsTab) rebuild() {
 		rows = append(rows, accordionRow{
 			key:    p.ID,
 			header: promptHeader(p, &t.acc),
-			body:   promptBody(p),
+			body:   promptBody(p, t.bodyWidth()),
 		})
 	}
 	t.acc = t.acc.setRows(rows)
@@ -229,11 +235,21 @@ func promptHeader(p prompts.Prompt, acc *accordion) func(bool) string {
 	}
 }
 
-func promptBody(p prompts.Prompt) []string {
-	lines := strings.Split(strings.TrimRight(p.Text, "\n"), "\n")
+// bodyWidth is what a wrapped body line has to fit in: the pane less the
+// accordion's cursor column and this tab's indent.
+func (t *PromptsTab) bodyWidth() int {
+	return max(20, t.width-accordionPrefix-bodyIndent)
+}
+
+// promptBody is the prompt's text, wrapped. A prompt is prose, so a long line
+// has to fold rather than run off the edge the way a diff line does.
+func promptBody(p prompts.Prompt, width int) []string {
+	wrapped := wrapPlain(strings.TrimRight(p.Text, "\n"), width)
+
+	lines := strings.Split(wrapped, "\n")
 	out := make([]string, 0, len(lines))
 	for _, l := range lines {
-		out = append(out, styleContext.Render("    "+l))
+		out = append(out, styleContext.Render(strings.Repeat(" ", bodyIndent)+l))
 	}
 	return out
 }

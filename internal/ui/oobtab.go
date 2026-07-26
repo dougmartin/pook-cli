@@ -47,7 +47,13 @@ func (t *OOBTab) Focus() Tab {
 func (t *OOBTab) Update(msg tea.Msg) (Tab, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		reflow := msg.Width != t.width
 		t.width, t.height = msg.Width, msg.Height
+		if reflow {
+			// File contents are wrapped to the pane, so a resize rebuilds
+			// them.
+			t.setGroups(t.groups)
+		}
 
 	case ActivityMsg:
 		t.badge.Dot = true
@@ -80,7 +86,7 @@ func (t *OOBTab) setGroups(groups []oob.Group) {
 			rows = append(rows, accordionRow{
 				key:    key,
 				header: oobHeader(f),
-				body:   oobBody(f),
+				body:   oobBody(f, t.bodyWidth()),
 			})
 		}
 	}
@@ -125,8 +131,14 @@ func oobHeader(f oob.File) func(bool) string {
 	}
 }
 
-// oobBody is the file's content, plain.
-func oobBody(f oob.File) []string {
+// bodyWidth is what a wrapped content line has to fit in.
+func (t *OOBTab) bodyWidth() int {
+	return max(20, t.width-accordionPrefix-bodyIndent)
+}
+
+// oobBody is the file's content, plain and wrapped. An oob file is a note, so
+// its long lines fold rather than running off the edge.
+func oobBody(f oob.File, width int) []string {
 	if f.Binary {
 		return []string{styleDim.Render("    binary file")}
 	}
@@ -134,10 +146,12 @@ func oobBody(f oob.File) []string {
 		return []string{styleDim.Render("    empty")}
 	}
 
-	lines := strings.Split(strings.TrimRight(f.Content, "\n"), "\n")
+	wrapped := wrapPlain(strings.TrimRight(f.Content, "\n"), width)
+
+	lines := strings.Split(wrapped, "\n")
 	out := make([]string, 0, len(lines))
 	for _, l := range lines {
-		out = append(out, styleContext.Render("    "+l))
+		out = append(out, styleContext.Render(strings.Repeat(" ", bodyIndent)+l))
 	}
 	return out
 }

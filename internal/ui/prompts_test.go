@@ -385,3 +385,65 @@ func typeString(m Model, s string) Model {
 	}
 	return m
 }
+
+// A prompt is prose, so a long line has to fold rather than run off the edge
+// the way a diff line does.
+func TestLongPromptsWrap(t *testing.T) {
+	long := "This is a deliberately long single-line prompt that runs well past " +
+		"the width of any sensible terminal pane and therefore has to be folded " +
+		"across several lines rather than truncated at the edge."
+
+	store := prompts.NewStore(filepath.Join(t.TempDir(), "prompts.json"))
+	mustAddPrompt(t, store, "Long one", long)
+
+	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+	promptsTab(m).Load()
+	m = press(m, "5", " ")
+
+	frame := m.View()
+	requireFrameSize(t, frame, testWidth, testHeight)
+
+	// Every word survives, spread over more than one line.
+	body := stripStyles(frame)
+	for _, word := range []string{"deliberately", "terminal", "truncated"} {
+		if !strings.Contains(body, word) {
+			t.Errorf("the wrapped prompt lost %q:\n%s", word, frame)
+		}
+	}
+
+	wrapped := 0
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, strings.Repeat(" ", accordionPrefix+bodyIndent)) &&
+			strings.TrimSpace(line) != "" {
+			wrapped++
+		}
+	}
+	if wrapped < 3 {
+		t.Errorf("the prompt folded onto %d lines, want it wrapped:\n%s", wrapped, frame)
+	}
+}
+
+// A resize reflows the wrapped bodies rather than leaving them at the old
+// width.
+func TestPromptWrappingFollowsAResize(t *testing.T) {
+	long := strings.Repeat("word ", 60)
+
+	store := prompts.NewStore(filepath.Join(t.TempDir(), "prompts.json"))
+	mustAddPrompt(t, store, "Long one", long)
+
+	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: 100, Height: 30})
+	promptsTab(m).Load()
+	m = press(m, "5", " ")
+
+	wide := len(promptsTab(m).acc.rows[0].body)
+
+	m = apply(m, tea.WindowSizeMsg{Width: 40, Height: 30})
+	narrow := len(promptsTab(m).acc.rows[0].body)
+
+	if narrow <= wide {
+		t.Errorf("body is %d lines at width 40 and %d at width 100, want more when narrower", narrow, wide)
+	}
+	requireFrameSize(t, m.View(), 40, 30)
+}

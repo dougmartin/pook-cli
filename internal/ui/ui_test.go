@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 
 	"github.com/dougmartin/pook-cli/internal/git"
@@ -138,3 +139,6 @@ func writeTestFile(t *testing.T, dir, name, body string) {
 		t.Fatal(err)
 	}
 }
+
+// stripStyles removes ANSI sequences so a test can assert on text alone.
+func stripStyles(s string) string { return ansi.Strip(s) }
