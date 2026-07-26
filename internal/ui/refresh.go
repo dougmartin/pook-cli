@@ -18,6 +18,10 @@ type refreshedMsg struct {
 	HasActivity bool
 }
 
+// needsRefreshMsg asks the shell for a refresh after something changed the
+// repo from inside pook: a discarded file, or a file edited in $EDITOR.
+type needsRefreshMsg struct{}
+
 // idleMsg raises the "agent went quiet" banner.
 type idleMsg struct{ Text string }
 

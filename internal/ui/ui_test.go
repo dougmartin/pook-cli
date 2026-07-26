@@ -2,6 +2,8 @@ package ui
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -106,5 +108,23 @@ func requireFrameSize(t *testing.T, frame string, width, height int) {
 		if w := lipgloss.Width(line); w > width {
 			t.Fatalf("line %d is %d cells wide, want at most %d: %q", i, w, width, line)
 		}
+	}
+}
+
+// execCommand builds a git invocation against a directory.
+func execCommand(t *testing.T, dir string, args ...string) *exec.Cmd {
+	t.Helper()
+	return exec.Command("git", append([]string{"-C", dir}, args...)...)
+}
+
+// writeTestFile writes a file under dir, creating parents.
+func writeTestFile(t *testing.T, dir, name, body string) {
+	t.Helper()
+	full := filepath.Join(dir, name)
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

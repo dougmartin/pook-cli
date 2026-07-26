@@ -12,15 +12,27 @@ import (
 // may be quietly clipped. This fails the day the keymap outgrows the overlay,
 // which is the point at which it needs scrolling rather than more columns.
 func TestHelpShowsEveryBinding(t *testing.T) {
-	frame := press(newTestModel(t), "?").View()
+	m := newTestModel(t)
+	frame := press(m, "?").View()
 	requireFrameSize(t, frame, testWidth, testHeight)
 
-	for _, b := range globalBindings {
-		if !strings.Contains(frame, b.Display()) {
-			t.Errorf("help is missing the key %q\n%s", b.Display(), frame)
+	// Every binding the shell dispatches, and every binding each tab
+	// contributes, has to be readable at the standard terminal size.
+	sections := [][]Binding{globalBindings}
+	for _, tab := range m.tabs {
+		if b := tab.Bindings(); len(b) > 0 {
+			sections = append(sections, b)
 		}
-		if !strings.Contains(frame, b.Help) {
-			t.Errorf("help is missing the description %q\n%s", b.Help, frame)
+	}
+
+	for _, bindings := range sections {
+		for _, b := range bindings {
+			if !strings.Contains(frame, b.Display()) {
+				t.Errorf("help is missing the key %q\n%s", b.Display(), frame)
+			}
+			if !strings.Contains(frame, b.Help) {
+				t.Errorf("help is missing the description %q\n%s", b.Help, frame)
+			}
 		}
 	}
 	if !strings.Contains(frame, "esc closes") {
@@ -78,6 +90,7 @@ type bindingTab struct {
 func (b bindingTab) Title() string                 { return b.title }
 func (b bindingTab) Badge() Badge                  { return Badge{} }
 func (b bindingTab) Bindings() []Binding           { return b.bindings }
+func (b bindingTab) CapturingInput() bool          { return false }
 func (b bindingTab) Focus() Tab                    { return b }
 func (b bindingTab) Update(tea.Msg) (Tab, tea.Cmd) { return b, nil }
 func (b bindingTab) View(width, height int) string { return "" }

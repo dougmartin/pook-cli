@@ -207,10 +207,11 @@ func TestUnclaimedKeysReachTheActiveTab(t *testing.T) {
 
 type sizeProbe struct{ seen *tea.WindowSizeMsg }
 
-func (p sizeProbe) Title() string       { return "Probe" }
-func (p sizeProbe) Badge() Badge        { return Badge{} }
-func (p sizeProbe) Bindings() []Binding { return nil }
-func (p sizeProbe) Focus() Tab          { return p }
+func (p sizeProbe) Title() string        { return "Probe" }
+func (p sizeProbe) Badge() Badge         { return Badge{} }
+func (p sizeProbe) Bindings() []Binding  { return nil }
+func (p sizeProbe) CapturingInput() bool { return false }
+func (p sizeProbe) Focus() Tab           { return p }
 func (p sizeProbe) Update(msg tea.Msg) (Tab, tea.Cmd) {
 	if size, ok := msg.(tea.WindowSizeMsg); ok {
 		*p.seen = size
@@ -221,10 +222,11 @@ func (p sizeProbe) View(width, height int) string { return "" }
 
 type refreshProbe struct{ count *int }
 
-func (p refreshProbe) Title() string       { return "Probe" }
-func (p refreshProbe) Badge() Badge        { return Badge{} }
-func (p refreshProbe) Bindings() []Binding { return nil }
-func (p refreshProbe) Focus() Tab          { return p }
+func (p refreshProbe) Title() string        { return "Probe" }
+func (p refreshProbe) Badge() Badge         { return Badge{} }
+func (p refreshProbe) Bindings() []Binding  { return nil }
+func (p refreshProbe) CapturingInput() bool { return false }
+func (p refreshProbe) Focus() Tab           { return p }
 func (p refreshProbe) Update(msg tea.Msg) (Tab, tea.Cmd) {
 	if _, ok := msg.(RefreshMsg); ok {
 		*p.count++
@@ -235,10 +237,11 @@ func (p refreshProbe) View(width, height int) string { return "" }
 
 type keyProbe struct{ seen *[]string }
 
-func (p keyProbe) Title() string       { return "Probe" }
-func (p keyProbe) Badge() Badge        { return Badge{} }
-func (p keyProbe) Bindings() []Binding { return nil }
-func (p keyProbe) Focus() Tab          { return p }
+func (p keyProbe) Title() string        { return "Probe" }
+func (p keyProbe) Badge() Badge         { return Badge{} }
+func (p keyProbe) Bindings() []Binding  { return nil }
+func (p keyProbe) CapturingInput() bool { return false }
+func (p keyProbe) Focus() Tab           { return p }
 func (p keyProbe) Update(msg tea.Msg) (Tab, tea.Cmd) {
 	if k, ok := msg.(tea.KeyMsg); ok {
 		*p.seen = append(*p.seen, k.String())

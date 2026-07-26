@@ -33,6 +33,10 @@ type Tab interface {
 	Badge() Badge
 	// Bindings are the tab's own keys, listed in the help overlay.
 	Bindings() []Binding
+	// CapturingInput reports that the tab has a focused text field. While it
+	// does, keys reach the tab ahead of the global keymap, or typing "a" in a
+	// filter would open the activity ticker.
+	CapturingInput() bool
 	// Focus is called whenever this tab is the visible one. It clears the
 	// activity dot, since the user is now looking at the data.
 	Focus() Tab
@@ -60,9 +64,10 @@ func NewPlaceholderTab(title, note string) PlaceholderTab {
 	return PlaceholderTab{title: title, note: note}
 }
 
-func (t PlaceholderTab) Title() string       { return t.title }
-func (t PlaceholderTab) Badge() Badge        { return t.badge }
-func (t PlaceholderTab) Bindings() []Binding { return nil }
+func (t PlaceholderTab) Title() string        { return t.title }
+func (t PlaceholderTab) Badge() Badge         { return t.badge }
+func (t PlaceholderTab) Bindings() []Binding  { return nil }
+func (t PlaceholderTab) CapturingInput() bool { return false }
 
 func (t PlaceholderTab) Focus() Tab {
 	t.badge.Dot = false

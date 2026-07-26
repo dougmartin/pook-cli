@@ -29,10 +29,30 @@ var (
 	styleBadgeActive   = lipgloss.NewStyle().Background(colAccent).Foreground(colOnAccent).Bold(true)
 	styleBadgeInactive = lipgloss.NewStyle().Background(colBarBg).Foreground(colBadge).Bold(true)
 
-	styleDim     = lipgloss.NewStyle().Foreground(colDim)
-	styleWatched = lipgloss.NewStyle().Foreground(colBadge)
-	styleTitle   = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
-	styleKey     = lipgloss.NewStyle().Foreground(colText).Bold(true)
+	styleDim       = lipgloss.NewStyle().Foreground(colDim)
+	styleText      = lipgloss.NewStyle().Foreground(colText)
+	styleWatched   = lipgloss.NewStyle().Foreground(colBadge)
+	styleSelected  = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	styleCursor    = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	styleStale     = lipgloss.NewStyle().Foreground(colBadge).Bold(true)
+	styleAlertText = lipgloss.NewStyle().Foreground(colAlert).Bold(true)
+
+	// Diff colors. Green and red are the two everyone already reads as added
+	// and removed, so they are not up for reinterpretation.
+	colAdded   = lipgloss.AdaptiveColor{Light: "28", Dark: "78"}
+	colRemoved = lipgloss.AdaptiveColor{Light: "124", Dark: "203"}
+	colHunk    = lipgloss.AdaptiveColor{Light: "31", Dark: "80"}
+
+	styleAdded   = lipgloss.NewStyle().Foreground(colAdded)
+	styleRemoved = lipgloss.NewStyle().Foreground(colRemoved)
+	styleHunk    = lipgloss.NewStyle().Foreground(colHunk)
+	styleContext = lipgloss.NewStyle().Foreground(colText)
+
+	styleStatusNew     = lipgloss.NewStyle().Foreground(colAdded).Bold(true)
+	styleStatusChanged = lipgloss.NewStyle().Foreground(colHunk).Bold(true)
+	styleStatusDeleted = lipgloss.NewStyle().Foreground(colRemoved).Bold(true)
+	styleTitle         = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	styleKey           = lipgloss.NewStyle().Foreground(colText).Bold(true)
 
 	stylePanel = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).

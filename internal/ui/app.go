@@ -76,7 +76,7 @@ func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher) Model {
 		watcher: w,
 		now:     time.Now,
 		tabs: []Tab{
-			NewPlaceholderTab("Changes", "uncommitted changes, phase 4").countingFiles(),
+			NewChangesTab(repo),
 			NewPlaceholderTab("Branch", "commits on this branch, phase 5"),
 			NewPlaceholderTab("Session", "live Claude Code session, phase 5"),
 			NewPlaceholderTab("oob", "out-of-band files, phase 5"),
@@ -133,6 +133,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case idleMsg:
 		m.banner = msg.Text
 		return m, nil
+
+	case needsRefreshMsg:
+		mm, cmd := m.scheduleRefresh()
+		return mm, cmd
 
 	case ActivityMsg:
 		mm, cmd := m.routeTo(msg.Tab, msg)
@@ -248,6 +252,13 @@ func (m Model) handleKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		l, cmd := m.overlay.Update(k)
 		m.overlay = l
 		return m, cmd
+	}
+
+	// A tab with a focused text field takes keys ahead of the global keymap,
+	// so a filter can contain any character.
+	if m.tabs[m.active].CapturingInput() {
+		mm, cmd := m.routeTo(m.active, k)
+		return mm, cmd
 	}
 
 	if handled, mm, cmd := m.handleGlobalKey(k); handled {

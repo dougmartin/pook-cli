@@ -22,7 +22,7 @@ func TestProgramDrivesTabsAndQuits(t *testing.T) {
 	)
 
 	// The first frame carries the pane and both bars.
-	waitForOutput(t, tm, "uncommitted changes", "watching for changes", "1 Changes")
+	waitForOutput(t, tm, "no changes against HEAD", "watching for changes", "1 Changes")
 
 	tm.Send(key("3"))
 	waitForOutput(t, tm, "live Claude Code session")

@@ -1,0 +1,24 @@
+ pook  1 Changes 5  2 Branch  3 Session  4 oob  5 Prompts                       
+5/5 files · +18 -44 · filter all · sort latest
+>  ▾ chg package.json ! +2 -1
+  diff --git a/package.json b/package.json
+  @@ -1 +1 @@
+  -{}
+  +{"name":"x"}
+   ▾ chg internal/ui/app.go +12 -3
+  diff --git a/internal/ui/app.go b/internal/ui/app.go
+  index 1234567..89abcde 100644
+  --- a/internal/ui/app.go
+  +++ b/internal/ui/app.go
+  @@ -10,6 +10,7 @@ func (m Model) Update() {
+       switch msg := msg.(type) {
+  -    case oldMsg:
+  +    case newMsg:
+  +        m.handled = true
+       }
+   ▾ new README.md +4 -0
+  diff --git a/README.md b/README.md
+  @@ -0,0 +1 @@
+  +hello
+   ▾ del old/gone.go +0 -40
+ watching for changes                                           ? help · q quit 
