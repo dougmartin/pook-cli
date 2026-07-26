@@ -62,6 +62,8 @@ func applyCmd(m Model, msg tea.Msg) (Model, tea.Cmd) {
 }
 
 var namedKeys = map[string]tea.KeyType{
+	"ctrl+d":    tea.KeyCtrlD,
+	"ctrl+u":    tea.KeyCtrlU,
 	"tab":       tea.KeyTab,
 	"shift+tab": tea.KeyShiftTab,
 	"esc":       tea.KeyEsc,

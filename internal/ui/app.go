@@ -77,9 +77,9 @@ func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher) Model {
 		now:     time.Now,
 		tabs: []Tab{
 			NewChangesTab(repo),
-			NewPlaceholderTab("Branch", "commits on this branch, phase 5"),
-			NewPlaceholderTab("Session", "live Claude Code session, phase 5"),
-			NewPlaceholderTab("oob", "out-of-band files, phase 5"),
+			NewBranchTab(repo),
+			NewSessionTab(repo.Root),
+			NewOOBTab(),
 			NewPlaceholderTab("Prompts", "prompt library, phase 6"),
 		},
 	}

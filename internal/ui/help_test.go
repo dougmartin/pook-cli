@@ -13,8 +13,11 @@ import (
 // which is the point at which it needs scrolling rather than more columns.
 func TestHelpShowsEveryBinding(t *testing.T) {
 	m := newTestModel(t)
-	frame := press(m, "?").View()
-	requireFrameSize(t, frame, testWidth, testHeight)
+
+	// With every tab contributing a keymap the list no longer fits at 80x24,
+	// so what has to hold is that nothing is unreachable: scrolling to the
+	// bottom must expose every binding.
+	frame := scrollThroughHelp(t, m)
 
 	// Every binding the shell dispatches, and every binding each tab
 	// contributes, has to be readable at the standard terminal size.
@@ -94,3 +97,24 @@ func (b bindingTab) CapturingInput() bool          { return false }
 func (b bindingTab) Focus() Tab                    { return b }
 func (b bindingTab) Update(tea.Msg) (Tab, tea.Cmd) { return b, nil }
 func (b bindingTab) View(width, height int) string { return "" }
+
+// scrollThroughHelp opens the overlay and pages to the bottom, returning every
+// frame it passed through joined together.
+func scrollThroughHelp(t *testing.T, m Model) string {
+	t.Helper()
+	m = press(m, "?")
+
+	var seen []string
+	last := ""
+	for range 40 {
+		frame := m.View()
+		requireFrameSize(t, frame, testWidth, testHeight)
+		if frame == last {
+			break // the overlay has stopped moving
+		}
+		seen = append(seen, frame)
+		last = frame
+		m = press(m, "ctrl+d")
+	}
+	return strings.Join(seen, "\n")
+}

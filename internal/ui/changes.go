@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -91,6 +92,9 @@ type ChangesTab struct {
 
 	badge         Badge
 	width, height int
+
+	// now is injectable so the review mark is deterministic in tests.
+	now func() time.Time
 }
 
 // NewChangesTab builds the tab for a repo.
@@ -101,6 +105,7 @@ func NewChangesTab(repo git.Repo) *ChangesTab {
 
 	return &ChangesTab{
 		repo:   repo,
+		now:    time.Now,
 		acc:    newAccordion(),
 		raw:    map[string][]string{},
 		marked: map[string]string{},
@@ -345,7 +350,10 @@ func (t *ChangesTab) handleKey(k tea.KeyMsg) (Tab, tea.Cmd) {
 		t.rebuild()
 
 	case keyMark.Matches(k):
-		t.markReviewed()
+		at := t.markReviewed()
+		// The Branch tab flags commits made after the mark, so it has to
+		// hear about it too.
+		return t, func() tea.Msg { return markMsg{At: at} }
 
 	case keySinceMark.Matches(k):
 		t.sinceMark = !t.sinceMark
@@ -385,12 +393,13 @@ func (t *ChangesTab) handleFilterKey(k tea.KeyMsg) (Tab, tea.Cmd) {
 
 // markReviewed snapshots the current diffs, so the since-mark filter can show
 // what an agent touched after this point.
-func (t *ChangesTab) markReviewed() {
+func (t *ChangesTab) markReviewed() time.Time {
 	t.marked = make(map[string]string, len(t.files))
 	for _, f := range t.files {
 		t.marked[f.Path] = f.Diff
 	}
 	t.message = fmt.Sprintf("marked %d files reviewed", len(t.files))
+	return t.now()
 }
 
 func (t *ChangesTab) diffOf(path string) string {

@@ -48,6 +48,9 @@ var (
 	styleHunk    = lipgloss.NewStyle().Foreground(colHunk)
 	styleContext = lipgloss.NewStyle().Foreground(colText)
 
+	styleTool = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	styleLive = lipgloss.NewStyle().Background(colAdded).Foreground(colOnAccent).Bold(true)
+
 	styleStatusNew     = lipgloss.NewStyle().Foreground(colAdded).Bold(true)
 	styleStatusChanged = lipgloss.NewStyle().Foreground(colHunk).Bold(true)
 	styleStatusDeleted = lipgloss.NewStyle().Foreground(colRemoved).Bold(true)

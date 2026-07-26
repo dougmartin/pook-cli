@@ -1,6 +1,11 @@
  pook  1 Changes  2 Branch  3 Session  4 oob  5 Prompts                         
-no session found for this folder
-no messages in this session yet
+3 files in /home/doug/oob
+>  branch: feature/port 1 file
+    notes.md 23 chars
+   repo: pook-cli 2 files
+    todo.md 10 chars
+    sub/deep.txt binary
+   global 0 files
 
 
 
@@ -16,9 +21,4 @@ no messages in this session yet
 
 
 
-
-
-
-
-H prev user  L next user
  watching for changes                                           ? help · q quit 

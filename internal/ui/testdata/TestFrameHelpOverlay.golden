@@ -1,24 +1,24 @@
  pook  1 Changes  2 Branch  3 Session  4 oob  5 Prompts                         
   ╭──────────────────────────────────────────────────────────────────────────╮  
-  │ Keys  esc closes                                                         │  
+  │ Keys  esc closes · j/k scrolls · 1-18 of 30                              │  
   │                                                                          │  
-  │ Global                         Changes                                   │  
-  │ 1-5          select tab        j / down     move down                    │  
-  │ tab          next tab          k / up       move up                      │  
-  │ shift-tab    previous tab      g            top                          │  
-  │ a            activity ticker   G            bottom                       │  
-  │ c            clipboard modal   ctrl-d       page down                    │  
-  │ r            force refresh     ctrl-u       page up                      │  
-  │ ?            help              space        expand / collapse            │  
-  │ q            quit              zR           expand all                   │  
-  │                                zM           collapse all                 │  
-  │                                /            filter                       │  
-  │                                esc          clear filter                 │  
-  │                                o            open in $EDITOR              │  
-  │                                f            cycle status filter          │  
-  │                                s            cycle sort                   │  
-  │                                d            discard file                 │  
-  │                                m            mark reviewed                │  
-  │                                M            toggle since-mark            │  
+  │ Global                               Branch                              │  
+  │ 1-5          select tab              j / down     move down              │  
+  │ tab          next tab                k / up       move up                │  
+  │ shift-tab    previous tab            g            top                    │  
+  │ a            activity ticker         G            bottom                 │  
+  │ c            clipboard modal         ctrl-d       page down              │  
+  │ r            force refresh           ctrl-u       page up                │  
+  │ ?            help                    space        expand / collapse      │  
+  │ q            quit                    zR           expand all             │  
+  │                                      zM           collapse all           │  
+  │ Changes                                                                  │  
+  │ j / down     move down               Session                             │  
+  │ k / up       move up                 h / left     previous message       │  
+  │ g            top                     l / right    next message           │  
+  │ G            bottom                  H            previous user message  │  
+  │ ctrl-d       page down               L            next user message      │  
+  │ ctrl-u       page up                 $            jump to live           │  
+  │ space        expand / collapse       y            copy raw message       │  
   ╰──────────────────────────────────────────────────────────────────────────╯  
  watching for changes                                           ? help · q quit 

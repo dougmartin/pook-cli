@@ -40,47 +40,74 @@ func helpSection(title string, bindings []Binding) string {
 	return b.String()
 }
 
-// columnize packs sections into as many columns as it takes to fit rows,
-// which is what keeps the whole keymap visible once every tab contributes
-// bindings. Sections are never split across columns.
-func columnize(sections []string, rows int) string {
-	rows = max(1, rows)
+// columnize packs sections into as many columns as the width allows,
+// balancing their heights. Sections are never split across columns.
+func columnize(sections []string, width int) []string {
+	if len(sections) == 0 {
+		return nil
+	}
 
-	var cols []string
+	colWidth := 0
+	heights := make([]int, len(sections))
+	for i, s := range sections {
+		lines := strings.Split(s, "\n")
+		heights[i] = len(lines)
+		for _, l := range lines {
+			colWidth = max(colWidth, lipgloss.Width(l))
+		}
+	}
+	colWidth += columnGap
+
+	cols := max(1, width/max(1, colWidth))
+	cols = min(cols, len(sections))
+
+	total := 0
+	for _, h := range heights {
+		total += h + 1 // the blank line between sections
+	}
+	target := (total + cols - 1) / cols
+
+	var packed []string
 	var cur []string
 	used := 0
-
-	for _, s := range sections {
-		n := strings.Count(s, "\n") + 1
-		if len(cur) > 0 && used+1+n > rows {
-			cols = append(cols, strings.Join(cur, "\n\n"))
+	for i, s := range sections {
+		// Start a new column once this one is full, as long as there are
+		// columns left to start.
+		if len(cur) > 0 && used+heights[i]+1 > target && len(packed) < cols-1 {
+			packed = append(packed, strings.Join(cur, "\n\n"))
 			cur, used = nil, 0
 		}
 		if len(cur) > 0 {
-			used++ // the blank line between sections
+			used++
 		}
 		cur = append(cur, s)
-		used += n
+		used += heights[i]
 	}
 	if len(cur) > 0 {
-		cols = append(cols, strings.Join(cur, "\n\n"))
+		packed = append(packed, strings.Join(cur, "\n\n"))
 	}
 
-	for i, c := range cols {
-		if i < len(cols)-1 {
-			cols[i] = lipgloss.NewStyle().PaddingRight(3).Render(c)
-		} else {
-			cols[i] = c
+	for i := range packed {
+		if i < len(packed)-1 {
+			packed[i] = lipgloss.NewStyle().Width(colWidth).Render(packed[i])
 		}
 	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, cols...)
+	return strings.Split(lipgloss.JoinHorizontal(lipgloss.Top, packed...), "\n")
 }
+
+// columnGap is the space between help columns.
+const columnGap = 3
 
 // helpOverlay lists every binding: the global keymap, then each tab's own
 // keys. It is built from the same Binding values that dispatch uses, so a key
 // cannot be handled without appearing here.
+//
+// The list packs into columns to fit the width and scrolls when it still does
+// not fit, because with every tab contributing a keymap it no longer does at
+// 80x24.
 type helpOverlay struct {
 	sections []string
+	offset   int
 }
 
 func newHelpOverlay(m Model) helpOverlay {
@@ -97,20 +124,58 @@ func newHelpOverlay(m Model) helpOverlay {
 
 func (h helpOverlay) Update(msg tea.Msg) (layer, tea.Cmd) {
 	k, ok := msg.(tea.KeyMsg)
-	if ok && (keyClose.Matches(k) || keyHelp.Matches(k) || keyQuit.Matches(k)) {
+	if !ok {
+		return h, nil
+	}
+	if keyClose.Matches(k) || keyHelp.Matches(k) || keyQuit.Matches(k) {
 		return nil, nil
+	}
+
+	switch {
+	case keyDown.Matches(k):
+		h.offset++
+	case keyUp.Matches(k):
+		h.offset = max(0, h.offset-1)
+	case keyPageDown.Matches(k):
+		h.offset += helpPage
+	case keyPageUp.Matches(k):
+		h.offset = max(0, h.offset-helpPage)
 	}
 	return h, nil
 }
 
+// helpPage is how far the paging keys move in the overlay.
+const helpPage = 10
+
 func (h helpOverlay) View(width, height int) string {
-	// The panel costs two border rows, the header and the blank under it.
+	inner := max(1, width-panelChrome)
+	rows := max(1, height-panelRows)
+
+	lines := columnize(h.sections, inner)
+
+	offset := min(h.offset, max(0, len(lines)-rows))
+	end := min(offset+rows, len(lines))
+	visible := lines[offset:end]
+
+	hint := "esc closes"
+	if len(lines) > rows {
+		hint = fmt.Sprintf("esc closes · j/k scrolls · %d-%d of %d",
+			offset+1, end, len(lines))
+	}
+
 	return panel(
-		styleTitle.Render("Keys")+"  "+styleDim.Render("esc closes"),
-		columnize(h.sections, height-4),
+		styleTitle.Render("Keys")+"  "+styleDim.Render(hint),
+		strings.Join(visible, "\n"),
 		width, height,
 	)
 }
+
+// panelChrome is the width a panel spends on its border and padding, and
+// panelRows the height it spends on its border, header and the blank under it.
+const (
+	panelChrome = 6
+	panelRows   = 4
+)
 
 // tickerOverlay is the activity ticker: the rolling log of the last 50 file
 // and commit events. Newest first, so the most recent activity is visible

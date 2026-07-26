@@ -25,7 +25,7 @@ func TestProgramDrivesTabsAndQuits(t *testing.T) {
 	waitForOutput(t, tm, "no changes against HEAD", "watching for changes", "1 Changes")
 
 	tm.Send(key("3"))
-	waitForOutput(t, tm, "live Claude Code session")
+	waitForOutput(t, tm, "no session found")
 
 	tm.Send(key("?"))
 	waitForOutput(t, tm, "activity ticker")
