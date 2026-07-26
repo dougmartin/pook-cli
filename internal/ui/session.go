@@ -82,8 +82,10 @@ func (t *SessionTab) Focus() Tab {
 
 // Session bindings.
 var (
-	keyPrevMsg  = Binding{Keys: []string{"h", "left"}, Label: "h / left", Help: "previous message"}
-	keyNextMsg  = Binding{Keys: []string{"l", "right"}, Label: "l / right", Help: "next message"}
+	// The arrows are not bound here: left and right cycle tabs globally, so
+	// message navigation is h and l only.
+	keyPrevMsg  = Binding{Keys: []string{"h"}, Label: "h", Help: "previous message"}
+	keyNextMsg  = Binding{Keys: []string{"l"}, Label: "l", Help: "next message"}
 	keyPrevUser = Binding{Keys: []string{"H"}, Label: "H", Help: "previous user message"}
 	keyNextUser = Binding{Keys: []string{"L"}, Label: "L", Help: "next user message"}
 	keyJumpLive = Binding{Keys: []string{"$"}, Label: "$", Help: "jump to live"}

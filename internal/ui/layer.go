@@ -29,16 +29,28 @@ func panel(header, body string, width, height int) string {
 }
 
 // helpSection renders a titled block of "key   description" rows.
+//
+// The key gutter is sized to the section's own longest key rather than a fixed
+// width, so a long one like "shift-tab / left" cannot push its description out
+// of line.
 func helpSection(title string, bindings []Binding) string {
+	gutter := minKeyGutter
+	for _, bind := range bindings {
+		gutter = max(gutter, lipgloss.Width(bind.Display()))
+	}
+
 	var b strings.Builder
 	b.WriteString(styleTitle.Render(title))
 	for _, bind := range bindings {
 		fmt.Fprintf(&b, "\n%s  %s",
-			styleKey.Render(pad(bind.Display(), 11)),
+			styleKey.Render(pad(bind.Display(), gutter)),
 			styleDim.Render(bind.Help))
 	}
 	return b.String()
 }
+
+// minKeyGutter keeps short sections from looking cramped.
+const minKeyGutter = 11
 
 // columnize packs sections into as many columns as the width allows,
 // balancing their heights. Sections are never split across columns.

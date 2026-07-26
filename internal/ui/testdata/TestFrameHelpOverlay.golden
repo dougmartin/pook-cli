@@ -3,19 +3,19 @@
   │ Keys  esc closes · j/k scrolls · 1-18 of 44                              │  
   │                                                                          │  
   │ Global                               Branch                              │  
-  │ 1-5          select tab              j / down     move down              │  
-  │ tab          next tab                k / up       move up                │  
-  │ shift-tab    previous tab            g            top                    │  
-  │ a            activity ticker         G            bottom                 │  
-  │ c            clipboard modal         ctrl-d       page down              │  
-  │ r            force refresh           ctrl-u       page up                │  
-  │ ?            help                    space        expand / collapse      │  
-  │ q            quit                    zR           expand all             │  
+  │ 1-5               select tab         j / down     move down              │  
+  │ tab / right       next tab           k / up       move up                │  
+  │ shift-tab / left  previous tab       g            top                    │  
+  │ a                 activity ticker    G            bottom                 │  
+  │ c                 clipboard modal    ctrl-d       page down              │  
+  │ r                 force refresh      ctrl-u       page up                │  
+  │ ?                 help               space        expand / collapse      │  
+  │ q                 quit               zR           expand all             │  
   │                                      zM           collapse all           │  
   │ Changes                                                                  │  
   │ j / down     move down               Session                             │  
-  │ k / up       move up                 h / left     previous message       │  
-  │ g            top                     l / right    next message           │  
+  │ k / up       move up                 h            previous message       │  
+  │ g            top                     l            next message           │  
   │ G            bottom                  H            previous user message  │  
   │ ctrl-d       page down               L            next user message      │  
   │ ctrl-u       page up                 $            jump to live           │  

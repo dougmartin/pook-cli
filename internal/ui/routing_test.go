@@ -26,16 +26,62 @@ func TestDigitBeyondTabsIsIgnored(t *testing.T) {
 }
 
 func TestTabCyclingWraps(t *testing.T) {
-	m := newTestModel(t)
+	// The arrows cycle tabs alongside tab and shift-tab.
+	for _, keys := range []struct{ prev, next string }{
+		{prev: "shift+tab", next: "tab"},
+		{prev: "left", next: "right"},
+	} {
+		t.Run(keys.next, func(t *testing.T) {
+			m := newTestModel(t)
 
-	m = press(m, "shift+tab")
-	if m.active != TabPrompts {
-		t.Fatalf("shift-tab from first tab = %d, want %d", m.active, TabPrompts)
+			m = press(m, keys.prev)
+			if m.active != TabPrompts {
+				t.Fatalf("%s from the first tab = %d, want %d", keys.prev, m.active, TabPrompts)
+			}
+
+			m = press(m, keys.next)
+			if m.active != TabChanges {
+				t.Fatalf("%s from the last tab = %d, want %d", keys.next, m.active, TabChanges)
+			}
+
+			m = press(m, keys.next)
+			if m.active != TabBranch {
+				t.Fatalf("%s = %d, want %d", keys.next, m.active, TabBranch)
+			}
+		})
+	}
+}
+
+// The arrows belong to the shell, so the Session tab navigates with h and l.
+func TestArrowsCycleTabsFromTheSessionTab(t *testing.T) {
+	m := press(newTestModel(t), "3")
+
+	m = press(m, "right")
+	if m.active != TabOOB {
+		t.Errorf("right from Session = %d, want %d", m.active, TabOOB)
 	}
 
-	m = press(m, "tab")
+	m = press(m, "left")
+	if m.active != TabSession {
+		t.Errorf("left = %d, want %d", m.active, TabSession)
+	}
+}
+
+// A focused text field still outranks them, so a filter can be edited with the
+// arrow keys.
+func TestArrowsReachAFocusedInput(t *testing.T) {
+	m := press(changesModel(t), "/")
+	m = press(m, "a", "b")
+
+	m = press(m, "left")
 	if m.active != TabChanges {
-		t.Fatalf("tab from last tab = %d, want %d", m.active, TabChanges)
+		t.Fatal("left switched tabs while the filter had focus")
+	}
+
+	// The caret moved, so typing lands before the last character.
+	m = press(m, "X")
+	if got := changesTab(m).pathQuery; got != "aXb" {
+		t.Errorf("filter = %q, want aXb", got)
 	}
 }
 
