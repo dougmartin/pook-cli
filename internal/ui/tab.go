@@ -6,12 +6,16 @@ import (
 )
 
 // Tab indices, also the digits that select them.
+//
+// oob is last so that every other index is fixed whether or not it is shown.
+// TabOOB is only a valid index when the oob tab exists; routeTo bounds-checks,
+// and the shell asks hasOOB before addressing it.
 const (
 	TabChanges = iota
 	TabBranch
 	TabSession
-	TabOOB
 	TabPrompts
+	TabOOB
 )
 
 // Badge is the marker a tab carries in the tab bar. Count is a persistent

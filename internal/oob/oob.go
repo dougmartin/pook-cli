@@ -61,6 +61,15 @@ func Home() string {
 	return filepath.Join(home, "oob")
 }
 
+// Available reports whether an oob home exists on this machine.
+//
+// pook hides the oob tab entirely when it does not: oob is a separate tool,
+// and a permanently empty tab is worse than no tab.
+func Available() bool {
+	info, err := os.Stat(Home())
+	return err == nil && info.IsDir()
+}
+
 // NamespaceDirs resolves the three namespace directories for a repo and
 // branch: global, repos/<repo>, branches/<repo>/<branch...>, where a branch
 // containing slashes nests as directories. The branch group is omitted when no

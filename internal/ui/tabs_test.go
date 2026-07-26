@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/golden"
 
 	"github.com/dougmartin/pook-cli/internal/claude"
@@ -197,7 +198,7 @@ func oobTab(m Model) *OOBTab { return m.tabs[TabOOB].(*OOBTab) }
 func oobModel(t *testing.T) Model {
 	t.Helper()
 	m := apply(newTestModel(t), refreshedMsg{Snap: monitor.Snapshot{OOB: sampleOOB()}})
-	return press(m, "4")
+	return press(m, "5")
 }
 
 func TestFrameOOBList(t *testing.T) {
@@ -477,4 +478,96 @@ func TestSessionWithNoMessages(t *testing.T) {
 		t.Errorf("an empty session does not say so:\n%s", view)
 	}
 	requireFrameSize(t, view, testWidth, testHeight)
+}
+
+// oob is a separate tool. On a machine that does not use it there is no tab,
+// no key in help, and no digit that reaches it.
+func TestOOBTabIsAbsentWithoutAnOOBHome(t *testing.T) {
+	withoutOOB(t)
+
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+
+	if got := len(m.tabs); got != 4 {
+		t.Fatalf("tabs = %d, want 4 without an oob home", got)
+	}
+	for _, tab := range m.tabs {
+		if tab.Title() == "oob" {
+			t.Fatal("the oob tab is present with no oob home")
+		}
+	}
+
+	frame := m.View()
+	requireFrameSize(t, frame, testWidth, testHeight)
+	if strings.Contains(frame, "oob") {
+		t.Errorf("the tab bar still mentions oob:\n%s", frame)
+	}
+
+	// And it contributes no section to help. Its bindings are all shared with
+	// other tabs, so the section heading is what has to be gone.
+	help := scrollThroughHelp(t, m)
+	if strings.Contains(help, "oob") {
+		t.Errorf("help still has an oob section:\n%s", help)
+	}
+}
+
+// The digit that would select it does nothing, rather than landing somewhere
+// unexpected.
+func TestDigitFiveDoesNothingWithoutTheOOBTab(t *testing.T) {
+	withoutOOB(t)
+
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+
+	m = press(m, "3", "5")
+	if m.active != TabSession {
+		t.Errorf("active = %d, want it to stay on Session", m.active)
+	}
+}
+
+// Cycling wraps over the four tabs that are there.
+func TestCyclingWrapsWithoutTheOOBTab(t *testing.T) {
+	withoutOOB(t)
+
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+
+	m = press(m, "left")
+	if m.active != TabPrompts {
+		t.Fatalf("left from the first tab = %d, want Prompts as the last", m.active)
+	}
+	m = press(m, "right")
+	if m.active != TabChanges {
+		t.Errorf("right from the last tab = %d, want Changes", m.active)
+	}
+}
+
+// A refresh reporting oob activity must not address a tab that is not there.
+func TestOOBActivityIsIgnoredWithoutTheTab(t *testing.T) {
+	withoutOOB(t)
+
+	m := New(gitRepoForTest(), nil, nil, nil).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+
+	m = apply(m, refreshedMsg{Snap: monitor.Snapshot{OOBChanged: true, BranchChanged: true}})
+
+	if !m.tabs[TabBranch].Badge().Dot {
+		t.Error("the Branch dot was lost")
+	}
+	requireFrameSize(t, m.View(), testWidth, testHeight)
+}
+
+// oob sits last, so every other tab keeps its position either way.
+func TestTabOrder(t *testing.T) {
+	m := newTestModel(t)
+
+	want := []string{"Changes", "Branch", "Session", "Prompts", "oob"}
+	for i, title := range want {
+		if i >= len(m.tabs) {
+			t.Fatalf("only %d tabs, want %d", len(m.tabs), len(want))
+		}
+		if got := m.tabs[i].Title(); got != title {
+			t.Errorf("tab %d = %q, want %q", i, got, title)
+		}
+	}
 }

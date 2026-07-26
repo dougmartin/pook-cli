@@ -35,8 +35,8 @@ func TestTabCyclingWraps(t *testing.T) {
 			m := newTestModel(t)
 
 			m = press(m, keys.prev)
-			if m.active != TabPrompts {
-				t.Fatalf("%s from the first tab = %d, want %d", keys.prev, m.active, TabPrompts)
+			if m.active != TabOOB {
+				t.Fatalf("%s from the first tab = %d, want %d", keys.prev, m.active, TabOOB)
 			}
 
 			m = press(m, keys.next)
@@ -57,8 +57,8 @@ func TestArrowsCycleTabsFromTheSessionTab(t *testing.T) {
 	m := press(newTestModel(t), "3")
 
 	m = press(m, "right")
-	if m.active != TabOOB {
-		t.Errorf("right from Session = %d, want %d", m.active, TabOOB)
+	if m.active != TabPrompts {
+		t.Errorf("right from Session = %d, want %d", m.active, TabPrompts)
 	}
 
 	m = press(m, "left")

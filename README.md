@@ -2,10 +2,11 @@
 
 A terminal UI for watching what an AI coding agent is doing to your repo while it works.
 
-`pook` shows uncommitted changes, the branch's commits, the live Claude Code session, and the
-repo's out-of-band files as top/htop-style tabs, with heartbeat, activity, and watched-path
-cues in a persistent status bar so you can tell at a glance whether the agent is still working,
-done, or stuck.
+`pook` shows uncommitted changes, the branch's commits, the live Claude Code session, and your
+prompt library as top/htop-style tabs, with heartbeat, activity, and watched-path cues in a
+persistent status bar so you can tell at a glance whether the agent is still working, done, or
+stuck. A fifth tab lists the repo's [out-of-band files](https://github.com/dougmartin/oob), and
+appears only when an oob home exists.
 
 It is a Go port of the [babysit-agent](../babysit-agent) VS Code extension, rebuilt as a single
 static binary with no editor dependency, so it also works over ssh.
@@ -19,8 +20,9 @@ behaviors the port reproduces.
 Run `pook` anywhere inside a git repo. It takes no arguments and watches the repo containing the
 working directory.
 
-Press `?` for the full keymap. The essentials: `1`-`5` select a tab, `a` opens the activity
-ticker, `c` opens the clipboard editor, `r` forces a refresh, `q` quits.
+Press `?` for the full keymap. The essentials: `1`-`5` select a tab, left/right or tab/shift-tab
+cycle them, `a` opens the activity ticker, `c` opens the clipboard editor, `r` forces a refresh,
+`q` quits.
 
 ## Configuration
 

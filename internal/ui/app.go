@@ -11,6 +11,7 @@ import (
 
 	"github.com/dougmartin/pook-cli/internal/git"
 	"github.com/dougmartin/pook-cli/internal/monitor"
+	"github.com/dougmartin/pook-cli/internal/oob"
 	"github.com/dougmartin/pook-cli/internal/prompts"
 	"github.com/dougmartin/pook-cli/internal/watch"
 )
@@ -76,15 +77,28 @@ func New(repo git.Repo, mon *monitor.Monitor, w *watch.Watcher, store *prompts.S
 		mon:     mon,
 		watcher: w,
 		now:     time.Now,
-		tabs: []Tab{
-			NewChangesTab(repo),
-			NewBranchTab(repo),
-			NewSessionTab(repo.Root),
-			NewOOBTab(),
-			NewPromptsTab(store),
-		},
+		tabs:    tabsFor(repo, store),
 	}
 }
+
+// tabsFor builds the tab set. The oob tab is only included when there is an
+// oob home to read, so a machine that does not use oob never sees the tab or
+// its keys in help.
+func tabsFor(repo git.Repo, store *prompts.Store) []Tab {
+	tabs := []Tab{
+		NewChangesTab(repo),
+		NewBranchTab(repo),
+		NewSessionTab(repo.Root),
+		NewPromptsTab(store),
+	}
+	if oob.Available() {
+		tabs = append(tabs, NewOOBTab())
+	}
+	return tabs
+}
+
+// hasOOB reports whether the oob tab is part of this run.
+func (m Model) hasOOB() bool { return TabOOB < len(m.tabs) }
 
 // WithClock replaces the clock used for the heartbeat.
 func (m Model) WithClock(now func() time.Time) Model {
@@ -208,11 +222,14 @@ func (m Model) applyRefresh(msg refreshedMsg) (Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	// Tabs the user is not looking at get a dot.
-	for tab, changed := range map[int]bool{
+	dots := map[int]bool{
 		TabChanges: msg.Snap.FilesChanged,
 		TabBranch:  msg.Snap.BranchChanged,
-		TabOOB:     msg.Snap.OOBChanged,
-	} {
+	}
+	if m.hasOOB() {
+		dots[TabOOB] = msg.Snap.OOBChanged
+	}
+	for tab, changed := range dots {
 		if !changed || tab == m.active {
 			continue
 		}

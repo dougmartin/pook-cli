@@ -21,7 +21,28 @@ import (
 // Color and contrast are on the spec's human-review list for that reason.
 func TestMain(m *testing.M) {
 	lipgloss.SetColorProfile(termenv.Ascii)
-	os.Exit(m.Run())
+
+	// The oob tab only exists when there is an oob home, so the suite points
+	// at one it created. Otherwise whether the tab is present would depend on
+	// the machine the tests run on. The path is fixed rather than random
+	// because the oob tab renders it, and a golden frame cannot hold a name
+	// that changes every run.
+	home := filepath.Join(os.TempDir(), "pook-oob-test-home")
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		panic(err)
+	}
+	os.Setenv("OOB_HOME", home)
+
+	code := m.Run()
+	os.RemoveAll(home)
+	os.Exit(code)
+}
+
+// withoutOOB points the oob home at a path that does not exist, so a model
+// built inside the test has no oob tab.
+func withoutOOB(t *testing.T) {
+	t.Helper()
+	t.Setenv("OOB_HOME", filepath.Join(t.TempDir(), "absent"))
 }
 
 const (
