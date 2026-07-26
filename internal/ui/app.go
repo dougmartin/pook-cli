@@ -144,6 +144,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		mm, cmd := m.scheduleRefresh()
 		return mm, cmd
 
+	case openClipboardMsg:
+		m.modal = newClipboardModal(msg)
+		return m, nil
+
 	case ActivityMsg:
 		mm, cmd := m.routeTo(msg.Tab, msg)
 		return mm, cmd
@@ -289,8 +293,7 @@ func (m Model) handleGlobalKey(k tea.KeyMsg) (bool, Model, tea.Cmd) {
 		return true, m, nil
 
 	case keyClipboard.Matches(k):
-		m.modal = clipboardModal{}
-		return true, m, nil
+		return true, m, readClipboardCmd()
 
 	case keyRefresh.Matches(k):
 		mm, cmd := m.scheduleRefresh()

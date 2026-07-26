@@ -566,11 +566,20 @@ func (t *PromptsTab) exportTo(path string) {
 	t.message = fmt.Sprintf("exported %d prompts to %s", len(t.all()), path)
 }
 
-// copyTextCmd puts text on the clipboard.
+// copyTextCmd puts text on the clipboard, and opens the clipboard modal when
+// the text still carries an inline [MARKER] to fill in.
 func copyTextCmd(text, what string) tea.Cmd {
-	return func() tea.Msg {
+	copy := func() tea.Msg {
 		return copiedMsg{What: what, Err: clip.Write(text)}
 	}
+	if !prompts.HasInlineMarker(text) {
+		return copy
+	}
+
+	open := func() tea.Msg {
+		return openClipboardMsg{Text: text, SelectMarker: true}
+	}
+	return tea.Batch(copy, open)
 }
 
 func (t *PromptsTab) listHeight() int {

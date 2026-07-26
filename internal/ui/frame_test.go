@@ -60,12 +60,6 @@ func TestFrameTickerOverlay(t *testing.T) {
 	golden.RequireEqual(t, []byte(frame))
 }
 
-func TestFrameClipboardModal(t *testing.T) {
-	frame := press(newTestModel(t), "c").View()
-	requireFrameSize(t, frame, testWidth, testHeight)
-	golden.RequireEqual(t, []byte(frame))
-}
-
 // A terminal too narrow for the status bar's two segments must still produce a
 // well-formed frame.
 func TestFrameNarrow(t *testing.T) {

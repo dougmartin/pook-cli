@@ -1,10 +1,8 @@
  pook  1 Changes  2 Branch  3 Session  4 oob  5 Prompts                         
   ╭──────────────────────────────────────────────────────────────────────────╮  
-  │ Clipboard  ctrl-s saves · esc closes                                     │  
+  │ Clipboard  ctrl-s saves · esc closes · tab cycles 2 markers              │  
   │                                                                          │  
-  │ some clipboard text                                                      │  
-  │ over two lines                                                           │  
-  │                                                                          │  
+  │ Work on [STORY] and open [FILE PATH].                                    │  
   │                                                                          │  
   │                                                                          │  
   │                                                                          │  
@@ -19,6 +17,8 @@
   │                                                                          │  
   │                                                                          │  
   │                                                                          │  
+  │                                                                          │  
+  │                                                                          │  
+  │ typing replaces the selected marker                                      │  
   ╰──────────────────────────────────────────────────────────────────────────╯  
-                                                                                
  watching for changes                                           ? help · q quit 

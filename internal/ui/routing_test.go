@@ -51,14 +51,18 @@ func TestQuitKeys(t *testing.T) {
 // The update loop's precedence: a modal takes keys ahead of the global keymap,
 // so tab switching is inert while it is open.
 func TestModalSwallowsGlobalKeys(t *testing.T) {
-	m := press(newTestModel(t), "c")
+	// c reads the clipboard first, so the modal is opened by the result.
+	m := apply(newTestModel(t), openClipboardMsg{Text: "text"})
 	if m.modal == nil {
-		t.Fatal("c did not open the clipboard modal")
+		t.Fatal("the clipboard modal did not open")
 	}
 
 	m = press(m, "3")
 	if m.active != TabChanges {
 		t.Fatalf("tab switched to %d while a modal was open", m.active)
+	}
+	if got := m.modal.(clipboardModal).area.value(); got != "3text" {
+		t.Errorf("the modal did not receive the key: %q", got)
 	}
 
 	m = press(m, "esc")
@@ -91,7 +95,7 @@ func TestOverlaySwallowsGlobalKeys(t *testing.T) {
 
 // ctrl+c is checked ahead of the modal, so no layer can trap the user.
 func TestForceQuitEscapesAModal(t *testing.T) {
-	m := press(newTestModel(t), "c")
+	m := apply(newTestModel(t), openClipboardMsg{Text: "text"})
 	_, cmd := applyCmd(m, key("ctrl+c"))
 	if !isQuit(cmd) {
 		t.Fatal("ctrl+c did not quit with a modal open")
@@ -101,7 +105,7 @@ func TestForceQuitEscapesAModal(t *testing.T) {
 // A modal opened over an overlay is still what receives keys.
 func TestModalOutranksOverlay(t *testing.T) {
 	m := press(newTestModel(t), "?")
-	m.modal = clipboardModal{}
+	m.modal = newClipboardModal(openClipboardMsg{Text: "text"})
 
 	if !strings.Contains(m.View(), "Clipboard") {
 		t.Fatal("overlay rendered over an open modal")

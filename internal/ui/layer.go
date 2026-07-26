@@ -220,24 +220,3 @@ func (t tickerOverlay) View(width, height int) string {
 		width, height,
 	)
 }
-
-// clipboardModal is the phase 7 clipboard editor. It exists now as the one
-// thing routed ahead of overlays, which is what keeps the update loop's
-// precedence honest.
-type clipboardModal struct{}
-
-func (c clipboardModal) Update(msg tea.Msg) (layer, tea.Cmd) {
-	k, ok := msg.(tea.KeyMsg)
-	if ok && keyClose.Matches(k) {
-		return nil, nil
-	}
-	return c, nil
-}
-
-func (c clipboardModal) View(width, height int) string {
-	return panel(
-		styleTitle.Render("Clipboard")+"  "+styleDim.Render("esc closes"),
-		styleDim.Render("editable clipboard arrives in phase 7"),
-		width, height,
-	)
-}

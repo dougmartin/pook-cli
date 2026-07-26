@@ -48,6 +48,9 @@ var (
 	styleHunk    = lipgloss.NewStyle().Foreground(colHunk)
 	styleContext = lipgloss.NewStyle().Foreground(colText)
 
+	styleCaret     = lipgloss.NewStyle().Reverse(true)
+	styleSelection = lipgloss.NewStyle().Background(colAccent).Foreground(colOnAccent)
+
 	styleTool = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
 	styleLive = lipgloss.NewStyle().Background(colAdded).Foreground(colOnAccent).Bold(true)
 
