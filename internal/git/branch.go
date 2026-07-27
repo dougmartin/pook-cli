@@ -126,7 +126,7 @@ func (r Repo) baseRange(name, head string) (baseRef, rng string) {
 }
 
 // nearestParentBranch is the branch this one is stacked on: the nearest other
-// local branch tip in HEAD's own history.
+// branch tip in HEAD's own history.
 //
 // Git records no parent branch, so this is inferred, but it is what makes a
 // branch stacked on another show only its own commits instead of repeating the
@@ -135,9 +135,17 @@ func (r Repo) baseRange(name, head string) (baseRef, rng string) {
 //
 // Walking rev-list once, newest first, finds the nearest tip without a
 // merge-base call per branch, which matters in repos with hundreds of them.
+//
+// Remote-tracking branches are scanned alongside local ones, which the
+// original did not do. Without them a stale local branch that was merged long
+// ago still sits in HEAD's history and gets mistaken for the parent, so a
+// branch cut from origin/master reports every commit back to whenever that
+// old branch was merged. The remote tip is usually the nearer and truer
+// answer. Local refs sort first, so where both point at the same commit the
+// shorter local name is the one shown.
 func (r Repo) nearestParentBranch(current string) (ref, mergeBase string, ok bool) {
 	out, err := r.runAll(
-		[]string{"for-each-ref", "--format=%(objectname) %(refname:short)", "refs/heads"},
+		[]string{"for-each-ref", "--format=%(objectname) %(refname)", "refs/heads", "refs/remotes"},
 		[]string{"rev-list", "-n", strconv.Itoa(parentSearchDepth), "HEAD"},
 	)
 	if err != nil {
@@ -146,12 +154,12 @@ func (r Repo) nearestParentBranch(current string) (ref, mergeBase string, ok boo
 
 	tips := map[string]string{} // commit -> branch at that commit
 	for _, line := range strings.Split(out[0], "\n") {
-		sha, name, found := strings.Cut(line, " ")
+		sha, full, found := strings.Cut(strings.TrimSpace(line), " ")
 		if !found {
 			continue
 		}
-		name = strings.TrimSpace(name)
-		if name == "" || name == current {
+		name, usable := branchRefName(full, current)
+		if !usable {
 			continue
 		}
 		if _, dup := tips[sha]; dup {
@@ -171,6 +179,34 @@ func (r Repo) nearestParentBranch(current string) (ref, mergeBase string, ok boo
 		}
 	}
 	return "", "", false
+}
+
+// branchRefName reduces a full ref to the name worth showing, rejecting the
+// ones that cannot be a parent of the current branch.
+func branchRefName(full, current string) (string, bool) {
+	switch {
+	case strings.HasPrefix(full, "refs/heads/"):
+		name := strings.TrimPrefix(full, "refs/heads/")
+		return name, name != "" && name != current
+
+	case strings.HasPrefix(full, "refs/remotes/"):
+		name := strings.TrimPrefix(full, "refs/remotes/")
+		if name == "" {
+			return "", false
+		}
+		// A remote's HEAD is a symbolic duplicate of its default branch under
+		// a name nobody wants to read.
+		if strings.HasSuffix(name, "/HEAD") {
+			return "", false
+		}
+		// This branch pushed is this same branch, not something it sits on.
+		// Using it would reduce the view to whatever is unpushed.
+		if _, branch, found := strings.Cut(name, "/"); found && branch == current {
+			return "", false
+		}
+		return name, true
+	}
+	return "", false
 }
 
 // logNumstatRe matches a --numstat row inside a log block.

@@ -209,3 +209,126 @@ func TestCommitDiffIsPerFile(t *testing.T) {
 		t.Errorf("diff does not contain the added line:\n%s", f.Diff)
 	}
 }
+
+// The case that sent this looking: a branch cut from origin/master, where an
+// older local branch was merged into master and never deleted. Its tip is
+// still an ancestor of HEAD, so a scan of local branches alone mistakes it for
+// the parent and reports every commit back to that merge.
+func TestStaleMergedBranchIsNotMistakenForTheParent(t *testing.T) {
+	r := makeRepo(t)
+
+	// feature was merged into main with a merge commit, and the local branch
+	// was left behind.
+	run(t, r.Root, "checkout", "-q", "main")
+	run(t, r.Root, "merge", "-q", "--no-ff", "-m", "merge feature", "feature")
+
+	// origin/master tracks that merge, which is where work is cut from.
+	head := strings.TrimSpace(mustRun(t, r, "rev-parse", "HEAD"))
+	run(t, r.Root, "update-ref", "refs/remotes/origin/main", head)
+
+	run(t, r.Root, "checkout", "-q", "-b", "REPORT-88")
+	commit(t, r.Root, "new.txt", "the only commit of my own")
+
+	info := collectBranch(t, r)
+	if info.BaseRef == "feature" {
+		t.Fatalf("base = %q, the stale merged branch", info.BaseRef)
+	}
+	if want := []string{"the only commit of my own"}; !slices.Equal(subjects(info.Commits), want) {
+		t.Errorf("commits = %v, want only this branch's own", subjects(info.Commits))
+	}
+}
+
+// A branch that has been pushed must not use its own remote ref as the base,
+// or it would show only what is unpushed.
+func TestABranchsOwnRemoteRefIsNotItsBase(t *testing.T) {
+	r := makeRepo(t)
+	run(t, r.Root, "checkout", "-q", "feature")
+
+	// feature is pushed at its first commit, then gains another locally.
+	head := strings.TrimSpace(mustRun(t, r, "rev-parse", "HEAD"))
+	run(t, r.Root, "update-ref", "refs/remotes/origin/feature", head)
+	commit(t, r.Root, "later.txt", "unpushed work")
+
+	info := collectBranch(t, r)
+	if info.BaseRef == "origin/feature" {
+		t.Fatalf("base = %q, the branch's own remote ref", info.BaseRef)
+	}
+	want := []string{"unpushed work", "feature one"}
+	if !slices.Equal(subjects(info.Commits), want) {
+		t.Errorf("commits = %v, want %v", subjects(info.Commits), want)
+	}
+}
+
+// A remote's symbolic HEAD duplicates its default branch under a name nobody
+// wants to read.
+func TestRemoteHeadIsNotUsedAsABaseName(t *testing.T) {
+	r := makeRepo(t)
+	run(t, r.Root, "checkout", "-q", "main")
+
+	head := strings.TrimSpace(mustRun(t, r, "rev-parse", "HEAD"))
+	run(t, r.Root, "update-ref", "refs/remotes/origin/main", head)
+	run(t, r.Root, "update-ref", "refs/remotes/origin/HEAD", head)
+
+	run(t, r.Root, "checkout", "-q", "-b", "work")
+	commit(t, r.Root, "w.txt", "work one")
+
+	if got := collectBranch(t, r).BaseRef; got == "origin/HEAD" {
+		t.Errorf("base = %q, want a real branch name", got)
+	}
+}
+
+// Where a local and a remote ref sit on the same commit, the shorter local
+// name is the one shown.
+func TestALocalNameWinsOverTheRemoteAtTheSameCommit(t *testing.T) {
+	r := makeRepo(t)
+	run(t, r.Root, "checkout", "-q", "main")
+
+	head := strings.TrimSpace(mustRun(t, r, "rev-parse", "HEAD"))
+	run(t, r.Root, "update-ref", "refs/remotes/origin/main", head)
+
+	run(t, r.Root, "checkout", "-q", "-b", "work")
+	commit(t, r.Root, "w.txt", "work one")
+
+	if got := collectBranch(t, r).BaseRef; got != "main" {
+		t.Errorf("base = %q, want the local name main", got)
+	}
+}
+
+func TestBranchRefName(t *testing.T) {
+	tests := []struct {
+		full, current, want string
+		usable              bool
+	}{
+		{full: "refs/heads/main", current: "work", want: "main", usable: true},
+		{full: "refs/heads/work", current: "work", usable: false},
+		{full: "refs/remotes/origin/main", current: "work", want: "origin/main", usable: true},
+		{full: "refs/remotes/origin/work", current: "work", usable: false},
+		{full: "refs/remotes/origin/HEAD", current: "work", usable: false},
+		// A slashed branch name is compared whole, not by its last segment.
+		{full: "refs/remotes/origin/feature/work", current: "work", want: "origin/feature/work", usable: true},
+		{full: "refs/remotes/origin/feature/work", current: "feature/work", usable: false},
+		{full: "refs/tags/v1.0.0", current: "work", usable: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.full+" on "+tt.current, func(t *testing.T) {
+			name, usable := branchRefName(tt.full, tt.current)
+			if usable != tt.usable {
+				t.Fatalf("usable = %v, want %v", usable, tt.usable)
+			}
+			if usable && name != tt.want {
+				t.Errorf("name = %q, want %q", name, tt.want)
+			}
+		})
+	}
+}
+
+// mustRun is a git call whose output the test needs.
+func mustRun(t *testing.T, r Repo, args ...string) string {
+	t.Helper()
+	out, err := r.runStrict(args...)
+	if err != nil {
+		t.Fatalf("git %v: %v", args, err)
+	}
+	return out
+}
