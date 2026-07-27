@@ -500,3 +500,71 @@ func TestSearchWithNoMatches(t *testing.T) {
 		t.Errorf("an empty result does not explain itself:\n%s", view)
 	}
 }
+
+// The arrows move the results while the query keeps focus, so a search can be
+// typed and then picked from without leaving it.
+func TestArrowsMoveTheResultsWhileSearching(t *testing.T) {
+	m := press(promptsModel(t), "/")
+	m = typeString(m, "e") // matches all three fixtures
+
+	tab := promptsTab(m)
+	if !tab.CapturingInput() {
+		t.Fatal("the search lost focus")
+	}
+	if got := len(tab.visible); got != 3 {
+		t.Fatalf("visible = %d, want all three", got)
+	}
+	first := tab.acc.cursor
+
+	m = press(m, "down")
+	tab = promptsTab(m)
+	if tab.acc.cursor == first {
+		t.Fatal("down did not move the result cursor")
+	}
+	// And the query is untouched: the arrow moved the list, not the caret.
+	if tab.query != "e" {
+		t.Errorf("query = %q, want it unchanged", tab.query)
+	}
+	if !tab.CapturingInput() {
+		t.Error("moving the cursor dropped focus from the search")
+	}
+
+	m = press(m, "up")
+	if got := promptsTab(m).acc.cursor; got != first {
+		t.Errorf("up did not come back to %d, got %d", first, got)
+	}
+}
+
+// Letters still type, so a search can contain the movement letters.
+func TestLettersStillTypeWhileSearching(t *testing.T) {
+	m := press(promptsModel(t), "/")
+	m = typeString(m, "jkgG")
+
+	if got := promptsTab(m).query; got != "jkgG" {
+		t.Errorf("query = %q, want jkgG typed rather than treated as movement", got)
+	}
+}
+
+// Having arrowed to a result, enter releases the search and the cursor stays
+// put, so a second enter copies the one you picked.
+func TestPickingAResultAfterSearching(t *testing.T) {
+	m := press(promptsModel(t), "/")
+	m = typeString(m, "e")
+	m = press(m, "down")
+
+	picked, ok := promptsTab(m).current()
+	if !ok {
+		t.Fatal("no prompt under the cursor")
+	}
+
+	m = press(m, "enter")
+	tab := promptsTab(m)
+	if tab.CapturingInput() {
+		t.Fatal("enter did not release the search")
+	}
+
+	after, ok := tab.current()
+	if !ok || after.ID != picked.ID {
+		t.Errorf("cursor moved off %q when the search closed", picked.Title)
+	}
+}

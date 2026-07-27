@@ -306,6 +306,23 @@ var accordionBindings = []Binding{
 	keyToggle, keyExpandAll, keyCollapse,
 }
 
+// handleNavKey applies only the movement keys that cannot be typed as text,
+// so a focused search box can still drive the list underneath it. The letter
+// bindings are deliberately absent: while typing, j has to mean j.
+func (a accordion) handleNavKey(k tea.KeyMsg, pageSize int) (accordion, bool) {
+	switch k.Type {
+	case tea.KeyUp:
+		return a.move(-1), true
+	case tea.KeyDown:
+		return a.move(1), true
+	case tea.KeyPgUp:
+		return a.move(-max(1, pageSize-1)), true
+	case tea.KeyPgDown:
+		return a.move(max(1, pageSize-1)), true
+	}
+	return a, false
+}
+
 // handleAccordionKey applies the shared navigation keys, reporting whether it
 // claimed the key. pageSize is the visible height.
 func (a accordion) handleAccordionKey(k tea.KeyMsg, pageSize int) (accordion, bool) {

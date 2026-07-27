@@ -94,6 +94,8 @@ var namedKeys = map[string]tea.KeyType{
 	"home":      tea.KeyHome,
 	"end":       tea.KeyEnd,
 	"backspace": tea.KeyBackspace,
+	"pgup":      tea.KeyPgUp,
+	"pgdown":    tea.KeyPgDown,
 	"tab":       tea.KeyTab,
 	"shift+tab": tea.KeyShiftTab,
 	"esc":       tea.KeyEsc,

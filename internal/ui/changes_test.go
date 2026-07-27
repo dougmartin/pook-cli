@@ -439,3 +439,28 @@ func makeDirtyRepo(t *testing.T) git.Repo {
 }
 
 var _ tea.Model = Model{}
+
+// The Changes path filter behaves the same way: arrows move the list, letters
+// keep typing.
+func TestArrowsMoveTheListWhileFiltering(t *testing.T) {
+	m := press(changesModel(t), "/")
+	m = press(m, "o") // matches several paths
+
+	tab := changesTab(m)
+	if len(tab.visibleFiles()) < 2 {
+		t.Fatalf("filter left %d files, need at least two to move between", len(tab.visibleFiles()))
+	}
+	first := tab.acc.cursor
+
+	m = press(m, "down")
+	tab = changesTab(m)
+	if tab.acc.cursor == first {
+		t.Error("down did not move the filtered list")
+	}
+	if tab.pathQuery != "o" {
+		t.Errorf("query = %q, want it unchanged by the arrow", tab.pathQuery)
+	}
+	if !tab.CapturingInput() {
+		t.Error("moving the cursor dropped focus from the filter")
+	}
+}

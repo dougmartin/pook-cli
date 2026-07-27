@@ -361,6 +361,13 @@ func (t *PromptsTab) handleSearchKey(k tea.KeyMsg) (Tab, tea.Cmd) {
 		return t, nil
 	}
 
+	// The arrows move the results while the query keeps focus, so you can
+	// type and then pick without leaving the search.
+	if acc, claimed := t.acc.handleNavKey(k, t.listHeight()); claimed {
+		t.acc = acc
+		return t, nil
+	}
+
 	var cmd tea.Cmd
 	t.search, cmd = t.search.Update(k)
 	t.query = t.search.Value()

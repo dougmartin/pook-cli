@@ -384,6 +384,13 @@ func (t *ChangesTab) handleFilterKey(k tea.KeyMsg) (Tab, tea.Cmd) {
 		return t, nil
 	}
 
+	// The arrows move the list while the filter keeps focus, the same as in
+	// the Prompts search.
+	if acc, claimed := t.acc.handleNavKey(k, t.listHeight()); claimed {
+		t.acc = acc
+		return t, nil
+	}
+
 	var cmd tea.Cmd
 	t.input, cmd = t.input.Update(k)
 	t.pathQuery = t.input.Value()
