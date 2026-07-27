@@ -110,13 +110,17 @@ func (t *PromptsTab) CapturingInput() bool {
 
 func (t *PromptsTab) Bindings() []Binding {
 	return []Binding{
-		keyDown, keyUp, keyToggle, keyFilter,
+		keyDown, keyUp, keyToggle, keySearchPrompts,
 		keyCopyPrompt, keyEditPrompt, keyNewPrompt, keyDeletePrompt,
 		keyMoveUp, keyMoveDown, keyImport, keyExport,
 	}
 }
 
 var (
+	// The shared keyFilter is labelled "filter"; here it searches bodies as
+	// well as titles, which is worth saying.
+	keySearchPrompts = Binding{Keys: []string{"/"}, Label: "/", Help: "search title or text"}
+
 	keyCopyPrompt   = Binding{Keys: []string{"enter"}, Label: "enter", Help: "copy prompt"}
 	keyEditPrompt   = Binding{Keys: []string{"e"}, Label: "e", Help: "edit"}
 	keyNewPrompt    = Binding{Keys: []string{"n"}, Label: "n", Help: "new"}
@@ -297,7 +301,7 @@ func (t *PromptsTab) handleListKey(k tea.KeyMsg) (Tab, tea.Cmd) {
 	}
 
 	switch {
-	case keyFilter.Matches(k):
+	case keySearchPrompts.Matches(k):
 		t.mode = promptSearch
 		t.search.SetValue(t.query)
 		t.search.CursorEnd()
@@ -631,7 +635,15 @@ func (t *PromptsTab) footer() string {
 	if t.message != "" {
 		return styleDim.Render(t.message)
 	}
-	return ""
+	// Nothing to report, so the row earns its keep by naming the keys. The
+	// search in particular is invisible otherwise.
+	return promptHint()
+}
+
+// promptHint names the actions worth knowing, shortest first so a narrow
+// pane keeps the most useful ones.
+func promptHint() string {
+	return styleDim.Render("/ search · enter copy · e edit · n new")
 }
 
 func (t *PromptsTab) View(width, height int) string {

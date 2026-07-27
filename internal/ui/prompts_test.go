@@ -447,3 +447,56 @@ func TestPromptWrappingFollowsAResize(t *testing.T) {
 	}
 	requireFrameSize(t, m.View(), 40, 30)
 }
+
+// The search matches bodies as well as titles, and says so where it can be
+// seen without opening help.
+func TestSearchIsDiscoverable(t *testing.T) {
+	m := promptsModel(t)
+
+	view := stripStyles(m.View())
+	if !strings.Contains(view, "/ search") {
+		t.Errorf("the tab does not mention the search:\n%s", view)
+	}
+
+	// And help calls it a search over both fields rather than a bare filter.
+	help := stripStyles(scrollThroughHelp(t, m, testWidth, testHeight))
+	if !strings.Contains(help, "search title or text") {
+		t.Errorf("help does not describe what the search covers:\n%s", help)
+	}
+}
+
+// Matching covers the body, which is the half that is easy to miss.
+func TestSearchMatchesBodyText(t *testing.T) {
+	store := prompts.NewStore(filepath.Join(t.TempDir(), "prompts.json"))
+	mustAddPrompt(t, store, "Alpha", "mentions playwright checks")
+	mustAddPrompt(t, store, "Beta", "nothing of the sort")
+	mustAddPrompt(t, store, "Playwright in the title", "unrelated body")
+
+	m := New(gitRepoForTest(), nil, nil, store).WithClock(fixedClock)
+	m = apply(m, tea.WindowSizeMsg{Width: testWidth, Height: testHeight})
+	promptsTab(m).Load()
+	m = press(m, "5")
+
+	m = press(m, "/")
+	m = typeString(m, "playwright")
+
+	// Case-insensitive, and both the body match and the title match survive.
+	want := []string{"Alpha", "Playwright in the title"}
+	if got := promptTitles(promptsTab(m)); !equalStrings(got, want) {
+		t.Errorf("search found %v, want %v", got, want)
+	}
+}
+
+// A search that matches nothing says so rather than looking broken.
+func TestSearchWithNoMatches(t *testing.T) {
+	m := press(promptsModel(t), "/")
+	m = typeString(m, "zzzznothing")
+
+	view := stripStyles(m.View())
+	if !strings.Contains(view, "0/3 prompts") {
+		t.Errorf("the count does not reflect the empty result:\n%s", view)
+	}
+	if !strings.Contains(view, "nothing matches this search") {
+		t.Errorf("an empty result does not explain itself:\n%s", view)
+	}
+}
