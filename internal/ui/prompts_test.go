@@ -568,3 +568,63 @@ func TestPickingAResultAfterSearching(t *testing.T) {
 		t.Errorf("cursor moved off %q when the search closed", picked.Title)
 	}
 }
+
+// The tab drives the accordion, so it answers to all of the accordion's keys
+// and has to say so. Listing them by hand is how these went undocumented.
+func TestPromptsDocumentsTheSharedKeys(t *testing.T) {
+	advertised := map[string]bool{}
+	for _, b := range promptsTab(promptsModel(t)).Bindings() {
+		advertised[b.Display()] = true
+	}
+
+	for _, b := range accordionBindings {
+		if !advertised[b.Display()] {
+			t.Errorf("the Prompts tab responds to %q but does not list it", b.Display())
+		}
+	}
+}
+
+// Expand and collapse all, the way the other accordion tabs do it.
+func TestPromptsExpandAndCollapseAll(t *testing.T) {
+	m := promptsModel(t)
+
+	m = press(m, "z", "R")
+	tab := promptsTab(m)
+	for _, p := range tab.visible {
+		if !tab.acc.isExpanded(p.ID) {
+			t.Errorf("zR did not expand %q", p.Title)
+		}
+	}
+	if !strings.Contains(stripStyles(m.View()), "Review {{file}} for bugs") {
+		t.Errorf("an expanded prompt does not show its text:\n%s", m.View())
+	}
+
+	m = press(m, "z", "M")
+	tab = promptsTab(m)
+	for _, p := range tab.visible {
+		if tab.acc.isExpanded(p.ID) {
+			t.Errorf("zM did not collapse %q", p.Title)
+		}
+	}
+}
+
+// Expanding all while a search is narrowing the list only opens what is shown.
+func TestExpandAllRespectsTheSearch(t *testing.T) {
+	m := press(promptsModel(t), "/")
+	m = typeString(m, "explain")
+	m = press(m, "enter")
+
+	m = press(m, "z", "R")
+	tab := promptsTab(m)
+
+	if len(tab.visible) != 1 {
+		t.Fatalf("visible = %d, want the one match", len(tab.visible))
+	}
+	if !tab.acc.isExpanded(tab.visible[0].ID) {
+		t.Error("the matching prompt was not expanded")
+	}
+	// The ones filtered out are not rows at all, so nothing else opened.
+	if got := len(tab.acc.rows); got != 1 {
+		t.Errorf("rows = %d, want only the match", got)
+	}
+}

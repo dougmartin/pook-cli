@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -109,11 +110,13 @@ func (t *PromptsTab) CapturingInput() bool {
 }
 
 func (t *PromptsTab) Bindings() []Binding {
-	return []Binding{
-		keyDown, keyUp, keyToggle, keySearchPrompts,
-		keyCopyPrompt, keyEditPrompt, keyNewPrompt, keyDeletePrompt,
-		keyMoveUp, keyMoveDown, keyImport, keyExport,
-	}
+	// The shared set rather than a hand-picked few: this tab drives the
+	// accordion, so it answers to all of its keys, and listing them by hand
+	// is how zR, zM, g and G went undocumented.
+	return append(slices.Clone(accordionBindings),
+		keySearchPrompts, keyCopyPrompt, keyEditPrompt, keyNewPrompt,
+		keyDeletePrompt, keyMoveUp, keyMoveDown, keyImport, keyExport,
+	)
 }
 
 var (
@@ -650,7 +653,7 @@ func (t *PromptsTab) footer() string {
 // promptHint names the actions worth knowing, shortest first so a narrow
 // pane keeps the most useful ones.
 func promptHint() string {
-	return styleDim.Render("/ search · enter copy · e edit · n new")
+	return styleDim.Render("/ search · enter copy · e edit · n new · zR/zM expand all")
 }
 
 func (t *PromptsTab) View(width, height int) string {
